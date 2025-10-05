@@ -2,9 +2,9 @@
  * @format
  */
 
-import React from 'react';
-import ReactTestRenderer from 'react-test-renderer';
-import App from '../App';
+const React = require('react');
+const ReactTestRenderer = require('react-test-renderer');
+const App = require('../App').default;
 
 test('renders correctly', async () => {
   await ReactTestRenderer.act(() => {
