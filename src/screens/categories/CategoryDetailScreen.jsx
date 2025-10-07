@@ -190,13 +190,14 @@ const CategoryDetailScreen = () => {
     </TouchableOpacity>
   );
 
-  if (!category) {
+  if (!categoryId) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
         <TopBar
           title="Category"
-          showBackButton={false}
+          showBackButton={true}
           showLanguageToggle={true}
+          onBackPress={() => navigation.goBack()}
           onLanguageToggle={handleLanguageToggle}
         />
         <Icon name="error" size={60} color={colors.error} />
@@ -211,7 +212,7 @@ const CategoryDetailScreen = () => {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
         <TopBar
-          title={category.name}
+          title={category?.name || "Category"}
           showBackButton={true}
           showLanguageToggle={true}
           onBackPress={() => navigation.goBack()}
@@ -228,7 +229,7 @@ const CategoryDetailScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
-        title={category.name}
+        title={category?.name || "Category"}
         showBackButton={true}
         showLanguageToggle={true}
         onBackPress={() => navigation.goBack()}
@@ -246,9 +247,9 @@ const CategoryDetailScreen = () => {
         <LinearGradient colors={colors.backgroundGradient} style={styles.header}>
           <View style={styles.headerContent}>
             <Icon name="folder" size={40} color="white" />
-            <Text style={styles.headerTitle}>{category.name}</Text>
+            <Text style={styles.headerTitle}>{category?.name || "Category"}</Text>
             <Text style={styles.headerSubtitle} numberOfLines={3}>
-              {category.description}
+              {category?.description || "Loading category description..."}
             </Text>
           </View>
         </LinearGradient>

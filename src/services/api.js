@@ -246,6 +246,10 @@ class ApiService {
     return this.request(`/api/student/quizzes?category=${categoryId}`);
   }
 
+  async getCategoryById(categoryId) {
+    return this.request(`/api/student/categories/${categoryId}`);
+  }
+
   /**
    * Get quiz by ID
    * @param {string} id - Quiz ID
