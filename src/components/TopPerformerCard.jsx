@@ -50,7 +50,7 @@ const TopPerformerCard = ({
   };
 
   return (
-    <View style={[styles.container, { width }]}>
+    <View style={[styles.container, { width, backgroundColor: colors.surface }]}>
       <LinearGradient
         colors={getGradientColors(rank)}
         style={styles.gradient}
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   gradient: {
-    padding: 12,
+    padding: 1,
     alignItems: 'center',
     minHeight: 140,
     justifyContent: 'space-between',

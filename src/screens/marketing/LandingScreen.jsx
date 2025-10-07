@@ -607,10 +607,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   statsContainer: {
+    minHeight: "100vh",
+    display: 'flex',
     flexDirection: 'row',
+    justifyContent: "center",
+    alignItems: "center"
   },
   statsScrollView: {
-    marginBottom: 20,
+    marginBottom: 200,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -626,7 +630,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginHorizontal: 8,
     borderRadius: 16,
-    width: (width - 48) * 0.48,
+    width: (width - 90) * 0.48,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -665,7 +669,7 @@ const styles = StyleSheet.create({
   },
   levelCard: {
     marginBottom: 16,
-    width: width * 0.7,
+    width: width * 0.9,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',

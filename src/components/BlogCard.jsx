@@ -31,31 +31,35 @@ const BlogCard = ({
 
   return (
     <TouchableOpacity
-      style={[styles.container, { width }]}
+      style={[styles.container, { width, backgroundColor: colors.surface }]}
       onPress={onPress}
       activeOpacity={0.8}
     >
       <View style={styles.imageContainer}>
-        {blog.image ? (
-          <Image source={{ uri: blog.image }} style={styles.image} />
+        {blog.featuredImage ? (
+          <Image source={{ uri: blog.featuredImage }} style={styles.featuredImage} />
         ) : (
-          <View style={[styles.placeholderImage, { backgroundColor: colors.primary + '20' }]}>
+          <View style={[styles.placeholderImage, { backgroundColor: colors.primary + '20' }]}> 
             <Icon name="article" size={40} color={colors.primary} />
           </View>
         )}
         {blog.isFeatured && (
-          <View style={[styles.featuredBadge, { backgroundColor: colors.warning }]}>
+          <View style={[styles.featuredBadge, { backgroundColor: colors.warning }]}> 
             <Icon name="star" size={12} color="white" />
             <Text style={styles.featuredText}>Featured</Text>
           </View>
         )}
         {blog.category && (
-          <View style={[styles.categoryBadge, { backgroundColor: colors.accent }]}>
-            <Text style={styles.categoryText}>{blog.category}</Text>
+          <View style={[styles.categoryBadge, { backgroundColor: colors.accent }]}> 
+            <Text style={styles.categoryText}>
+              {typeof blog.category === 'object' && blog.category !== null
+                ? blog.category.name
+                : blog.category}
+            </Text>
           </View>
         )}
       </View>
-      <View style={styles.content}>
+      <View style={[styles.content, { backgroundColor: colors.surface }]}> 
         <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
           {blog.title}
         </Text>
@@ -74,11 +78,13 @@ const BlogCard = ({
               style={[styles.author, { color: colors.textSecondary }]}
               numberOfLines={1}
             >
-              {blog.author || 'Anonymous'}
+              {typeof blog.author === 'object' && blog.author !== null
+                ? blog.author.name
+                : blog.author || 'Anonymous'}
             </Text>
           </View>
           {blog.publishedAt && (
-            <Text style={[styles.date, { color: colors.textSecondary }]}>
+            <Text style={[styles.date, { color: colors.textSecondary }]}> 
               {formatDate(blog.publishedAt)}
             </Text>
           )}
@@ -86,14 +92,14 @@ const BlogCard = ({
         <View style={styles.metaInfo}>
           <View style={styles.metaItem}>
             <Icon name="schedule" size={12} color={colors.textSecondary} />
-            <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+            <Text style={[styles.metaText, { color: colors.textSecondary }]}> 
               {blog.readTime || 5} min read
             </Text>
           </View>
           {blog.likes !== undefined && (
             <View style={styles.metaItem}>
               <Icon name="favorite" size={12} color={colors.textSecondary} />
-              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}> 
                 {blog.likes}
               </Text>
             </View>
@@ -101,7 +107,7 @@ const BlogCard = ({
           {blog.views !== undefined && (
             <View style={styles.metaItem}>
               <Icon name="visibility" size={12} color={colors.textSecondary} />
-              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}> 
                 {blog.views}
               </Text>
             </View>
@@ -115,6 +121,7 @@ const BlogCard = ({
 const styles = StyleSheet.create({
   container: {
     marginRight: 16,
+    marginBottom: 5,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -128,9 +135,9 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     position: 'relative',
-    height: 120,
+    height: 150,
   },
-  image: {
+  featuredImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
@@ -172,7 +179,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 12,
-    backgroundColor: 'white',
   },
   title: {
     fontSize: 16,

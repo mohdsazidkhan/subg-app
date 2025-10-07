@@ -32,11 +32,6 @@ const PostQuestionScreen = () => {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '', '', '']);
   const [correctAnswer, setCorrectAnswer] = useState(null);
-  const [explanation, setExplanation] = useState('');
-  const [category, setCategory] = useState('');
-  const [difficulty, setDifficulty] = useState('medium');
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [questionCount, setQuestionCount] = useState({
     currentCount: 0,
@@ -44,22 +39,18 @@ const PostQuestionScreen = () => {
     remaining: 100,
     canAddMore: true,
   });
+  const [dailyCount, setDailyCount] = useState({
+    currentCount: 0,
+    limit: 5,
+    remaining: 5,
+    canAddMore: true,
+  });
 
   useEffect(() => {
-    fetchCategories();
     fetchCurrentMonthQuestionCount();
+    fetchCurrentDayQuestionCount();
   }, []);
 
-  const fetchCategories = async () => {
-    try {
-      const response = await API.getPublicCategories();
-      if (response.success) {
-        setCategories(response.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
 
   const fetchCurrentMonthQuestionCount = async () => {
     try {
@@ -69,6 +60,17 @@ const PostQuestionScreen = () => {
       }
     } catch (error) {
       console.error('Error fetching current month question count:', error);
+    }
+  };
+
+  const fetchCurrentDayQuestionCount = async () => {
+    try {
+      const response = await API.getCurrentDayQuestionCount();
+      if (response.success) {
+        setDailyCount(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching current day question count:', error);
     }
   };
 
@@ -83,6 +85,14 @@ const PostQuestionScreen = () => {
   };
 
   const validateForm = () => {
+    if (!dailyCount.canAddMore) {
+      Alert.alert(
+        'Daily Limit Reached',
+        `You have reached the daily limit of ${dailyCount.limit} questions. You can add more questions tomorrow.`
+      );
+      return false;
+    }
+
     if (!questionCount.canAddMore) {
       Alert.alert(
         'Monthly Limit Reached',
@@ -106,16 +116,6 @@ const PostQuestionScreen = () => {
       return false;
     }
 
-    if (!category) {
-      Alert.alert('Error', 'Please select a category');
-      return false;
-    }
-
-    if (!explanation.trim()) {
-      Alert.alert('Error', 'Please provide an explanation');
-      return false;
-    }
-
     return true;
   };
 
@@ -127,10 +127,7 @@ const PostQuestionScreen = () => {
       const payload = {
         question: question.trim(),
         options: options.map(opt => opt.trim()),
-        correctAnswer,
-        explanation: explanation.trim(),
-        category,
-        difficulty,
+        correctAnswer
       };
 
       const response = await API.createUserQuestion(payload);
@@ -145,12 +142,10 @@ const PostQuestionScreen = () => {
         setQuestion('');
         setOptions(['', '', '', '']);
         setCorrectAnswer(null);
-        setExplanation('');
-        setCategory('');
-        setDifficulty('medium');
 
-        // Refresh question count
+        // Refresh question counts
         fetchCurrentMonthQuestionCount();
+        fetchCurrentDayQuestionCount();
 
         // Navigate back or to questions list
         navigation.goBack();
@@ -162,10 +157,30 @@ const PostQuestionScreen = () => {
       }
     } catch (error) {
       console.error('Error submitting question:', error);
-      showMessage({
-        message: error.message || 'Failed to submit question',
-        type: 'danger',
-      });
+      if (error?.response?.status === 429) {
+        const errorData = error?.response?.data;
+        if (errorData?.error === 'DAILY_LIMIT_EXCEEDED') {
+          showMessage({
+            message: 'You can add max 5 questions per day',
+            type: 'danger',
+          });
+        } else if (errorData?.error === 'MONTHLY_LIMIT_EXCEEDED') {
+          showMessage({
+            message: 'You can add max 100 questions in a month',
+            type: 'danger',
+          });
+        } else {
+          showMessage({
+            message: errorData?.message || 'Daily/Monthly limit exceeded',
+            type: 'danger',
+          });
+        }
+      } else {
+        showMessage({
+          message: error.message || 'Failed to submit question',
+          type: 'danger',
+        });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -217,30 +232,44 @@ const PostQuestionScreen = () => {
         showBackButton={true}
         onBackPress={() => navigation.goBack()}
       />
-
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}> 
             📝 Create New Question
           </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}> 
             Earn ₹10 for each approved question
           </Text>
 
+          {/* Daily Question Count */}
+          <View style={[styles.questionCountContainer, { backgroundColor: colors.surface }]}> 
+            <Text style={[styles.questionCountText, { color: colors.text }]}> 
+              Daily Progress: {dailyCount.currentCount}/{dailyCount.limit}
+            </Text>
+            <Text style={[styles.questionCountSubtext, { color: colors.textSecondary }]}> 
+              {dailyCount.remaining} questions remaining today
+            </Text>
+            {!dailyCount.canAddMore && (
+              <Text style={[styles.limitReachedText, { color: colors.error || '#FF6B6B' }]}> 
+                ⚠️ Daily limit reached
+              </Text>
+            )}
+          </View>
+
           {/* Monthly Question Count */}
-          <View style={[styles.questionCountContainer, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.questionCountText, { color: colors.text }]}>
+          <View style={[styles.questionCountContainer, { backgroundColor: colors.surface }]}> 
+            <Text style={[styles.questionCountText, { color: colors.text }]}> 
               Monthly Progress: {questionCount.currentCount}/{questionCount.limit}
             </Text>
-            <Text style={[styles.questionCountSubtext, { color: colors.textSecondary }]}>
+            <Text style={[styles.questionCountSubtext, { color: colors.textSecondary }]}> 
               {questionCount.remaining} questions remaining this month
             </Text>
             {!questionCount.canAddMore && (
-              <Text style={[styles.limitReachedText, { color: colors.error || '#FF6B6B' }]}>
+              <Text style={[styles.limitReachedText, { color: colors.error || '#FF6B6B' }]}> 
                 ⚠️ Monthly limit reached
               </Text>
             )}
@@ -248,7 +277,7 @@ const PostQuestionScreen = () => {
         </View>
 
         {/* Question Input */}
-        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
+        <Card style={[styles.section, { backgroundColor: colors.surface }]}> 
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Question *</Text>
           <TextInput
             style={[
@@ -265,120 +294,39 @@ const PostQuestionScreen = () => {
         </Card>
 
         {/* Options */}
-        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
+        <Card style={[styles.section, { backgroundColor: colors.surface }]}> 
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Answer Options *</Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}> 
             Tap on the option letter to mark it as correct
           </Text>
           {options.map((_, index) => renderOption(index))}
         </Card>
 
-        {/* Category Selection */}
-        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Category *</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {categories.map(cat => (
-              <TouchableOpacity
-                key={cat._id}
-                style={[
-                  styles.categoryChip,
-                  {
-                    backgroundColor: category === cat._id ? colors.primary : colors.background,
-                    borderColor: colors.primary,
-                  },
-                ]}
-                onPress={() => setCategory(cat._id)}
-              >
-                <Text
-                  style={[
-                    styles.categoryChipText,
-                    { color: category === cat._id ? 'white' : colors.primary },
-                  ]}
-                >
-                  {cat.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </Card>
-
-        {/* Difficulty Selection */}
-        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Difficulty Level</Text>
-          <View style={styles.difficultyContainer}>
-            {['easy', 'medium', 'hard'].map(level => (
-              <TouchableOpacity
-                key={level}
-                style={[
-                  styles.difficultyChip,
-                  {
-                    backgroundColor: difficulty === level ? colors.primary : colors.background,
-                    borderColor: colors.primary,
-                  },
-                ]}
-                onPress={() => setDifficulty(level)}
-              >
-                <Text
-                  style={[
-                    styles.difficultyChipText,
-                    { color: difficulty === level ? 'white' : colors.primary },
-                  ]}
-                >
-                  {level.charAt(0).toUpperCase() + level.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Card>
-
-        {/* Explanation */}
-        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Explanation *</Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Provide a clear explanation for the correct answer
-          </Text>
-          <TextInput
-            style={[
-              styles.explanationInput,
-              { color: colors.text, borderColor: colors.border, backgroundColor: colors.background },
-            ]}
-            placeholder="Explain why this is the correct answer..."
-            placeholderTextColor={colors.textSecondary}
-            value={explanation}
-            onChangeText={setExplanation}
-            multiline
-            numberOfLines={4}
-          />
-        </Card>
-
         {/* Guidelines */}
-        <Card style={[styles.guidelinesCard, { backgroundColor: colors.primary + '10' }]}>
+        <Card style={[styles.guidelinesCard, { backgroundColor: colors.surface }]}> 
           <Text style={[styles.guidelinesTitle, { color: colors.primary }]}>📋 Guidelines</Text>
-          <Text style={[styles.guidelinesText, { color: colors.text }]}>
-            • Questions should be clear and unambiguous{'\n'}
-            • All options should be plausible{'\n'}
-            • Provide detailed explanations{'\n'}
-            • Avoid controversial or offensive content{'\n'}
-            • Questions will be reviewed before approval
+          <Text style={[styles.guidelinesText, { color: colors.text }]}> 
+            {`• Questions should be clear and unambiguous\n• All options should be plausible\n• Avoid controversial or offensive content\n• Questions will be reviewed before approval`}
           </Text>
         </Card>
 
-        {/* Submit Button */}
         <View style={styles.submitContainer}>
           <Button
             title={
-              !questionCount.canAddMore
+              !dailyCount.canAddMore
+                ? 'Daily Limit Reached'
+                : !questionCount.canAddMore
                 ? 'Monthly Limit Reached'
                 : submitting
                 ? 'Submitting...'
                 : 'Submit Question'
             }
             onPress={handleSubmit}
-            disabled={submitting || !questionCount.canAddMore}
+            disabled={submitting || !questionCount.canAddMore || !dailyCount.canAddMore}
             style={[
               styles.submitButton,
               {
-                backgroundColor: !questionCount.canAddMore || submitting
+                backgroundColor: !questionCount.canAddMore || !dailyCount.canAddMore || submitting
                   ? colors.textSecondary
                   : colors.primary,
               },

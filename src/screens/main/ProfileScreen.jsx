@@ -211,11 +211,11 @@ const ProfileScreen = () => {
         {/* Menu Items */}
         <View style={styles.menuContainer}>
           {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.menuItem}
-              onPress={item.onPress}
-            >
+              <TouchableOpacity
+                key={index}
+                style={[styles.menuItem, { backgroundColor: colors.surface }]}
+                onPress={item.onPress}
+              >
               <View style={styles.menuItemContent}>
                 <Icon name={item.icon} size={24} color={colors.primary} />
                 <Text style={[styles.menuItemText, { color: colors.text }]}>
@@ -388,7 +388,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   menuItem: {
-    backgroundColor: 'white',
     marginBottom: 12,
     borderRadius: 12,
     shadowColor: '#000',

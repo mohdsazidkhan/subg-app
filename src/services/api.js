@@ -238,6 +238,14 @@ class ApiService {
     return this.request(`/api/student/subcategories?category=${categoryId}`);
   }
 
+  async getSubCategories(categoryId) {
+    return this.request(`/api/student/subcategories?category=${categoryId}`);
+  }
+
+  async getCategoryQuizzes(categoryId) {
+    return this.request(`/api/student/quizzes?category=${categoryId}`);
+  }
+
   /**
    * Get quiz by ID
    * @param {string} id - Quiz ID
@@ -501,7 +509,14 @@ class ApiService {
   }
 
   async getCurrentMonthQuestionCount() {
-    return this.request('/api/userQuestions/current-month-count');
+    // Backend route is '/api/userQuestions/monthly-count'
+    // previous path 'current-month-count' accidentally matched the '/userQuestions/:id' route
+    // resulting in Invalid id errors. Use the correct endpoint.
+    return this.request('/api/userQuestions/monthly-count');
+  }
+
+  async getCurrentDayQuestionCount() {
+    return this.request('/api/userQuestions/daily-count');
   }
 
   async getMyUserQuestions(params) {

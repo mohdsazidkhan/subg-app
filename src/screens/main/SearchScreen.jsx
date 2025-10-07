@@ -24,9 +24,9 @@ const SearchScreen = () => {
     try {
       setIsLoading(true);
       const response = await API.searchAll({ query: searchQuery.trim() });
-
+      console.log(response, 'responseresponse');
       if (response.success) {
-        setSearchResults(response.data || []);
+        setSearchResults(response?.quizzes || []);
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -45,10 +45,10 @@ const SearchScreen = () => {
       <Icon name="quiz" size={24} color={colors.primary} />
       <View style={styles.resultContent}>
         <Text style={[styles.resultTitle, { color: colors.text }]}>
-          {item.title}
+          {item.category.name}
         </Text>
         <Text style={[styles.resultDescription, { color: colors.textSecondary }]}>
-          {item.description || 'Quiz'}
+          {item.title || 'Quiz'}
         </Text>
       </View>
     </TouchableOpacity>
@@ -80,7 +80,7 @@ const SearchScreen = () => {
       {/* Search Results */}
       {searchResults.length > 0 ? (
         <FlatList
-          data={searchResults}
+          data={searchResults?.quizzes || []}
           renderItem={renderSearchResult}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.resultsContainer}

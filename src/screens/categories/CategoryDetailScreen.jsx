@@ -29,26 +29,35 @@ const CategoryDetailScreen = () => {
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage } = useLanguage();
 
-  const [category, setCategory] = useState(route.params?.category || null);
+  const [category, setCategory] = useState(null);
   const [subCategories, setSubCategories] = useState([]);
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const categoryId = route.params?.categoryId;
+
   useEffect(() => {
-    if (!category) {
+    if (!categoryId) {
       navigation.goBack();
       return;
     }
     fetchCategoryData();
-  }, []);
+  }, [categoryId]);
 
   const fetchCategoryData = async () => {
     try {
       setLoading(true);
+      
+      // First, get the category details
+      const categoryResponse = await API.getCategoryById(categoryId);
+      if (categoryResponse.success) {
+        setCategory(categoryResponse.data);
+      }
+      
       const [subCategoriesResponse, quizzesResponse] = await Promise.all([
-        API.getSubCategories(category._id),
-        API.getCategoryQuizzes(category._id),
+        API.getSubCategories(categoryId),
+        API.getCategoryQuizzes(categoryId),
       ]);
 
       if (subCategoriesResponse.success) {

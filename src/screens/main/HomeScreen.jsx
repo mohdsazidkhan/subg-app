@@ -21,12 +21,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useNetwork } from '../../contexts/NetworkContext';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
-
 import TopBar from '../../components/TopBar';
-import Button from '../../components/Button';
-import Card from '../../components/Card';
 import Logo from '../../components/Logo';
-import SearchBar from '../../components/SearchBar';
 import Carousel from '../../components/Carousel';
 import CategoryCard from '../../components/CategoryCard';
 import LevelCard from '../../components/LevelCard';
@@ -168,8 +164,9 @@ const HomeScreen = () => {
   const fetchTopPerformers = async () => {
     try {
       const response = await API.getPublicTopPerformersMonthly(10, user?._id);
+      console.error('getPublicTopPerformersMonthly', response);
       if (response.success) {
-        setTopPerformers(response.data);
+        setTopPerformers(response.data.top);
       }
     } catch (error) {
       console.error('Error fetching top performers:', error);
@@ -178,9 +175,23 @@ const HomeScreen = () => {
 
   const fetchMonthlyLegends = async () => {
     try {
-      const response = await API.getRecentMonthlyWinners(5);
-      if (response.success) {
-        setMonthlyLegends(response.data);
+      // Get previous month in YYYY-MM format
+      const now = new Date();
+      const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const year = previousMonth.getFullYear();
+      const month = String(previousMonth.getMonth() + 1).padStart(2, '0');
+      const monthYear = `${year}-${month}`;
+
+      const response = await API.getRecentMonthlyWinners(1, monthYear);
+      
+      if (response.success && response.data && response.data.length > 0) {
+        setMonthlyLegends(response?.data[0]?.winners);
+      } else {
+        // fallback: get most recent if previous month not available
+        const fallback = await API.getRecentMonthlyWinners(1);
+        if (fallback.success && fallback.data && fallback.data.length > 0) {
+          setMonthlyLegends(fallback.data);
+        }
       }
     } catch (error) {
       console.error('Error fetching monthly legends:', error);
@@ -198,10 +209,13 @@ const HomeScreen = () => {
     }
   };
 
+  console.log(blogs, 'blogsblogs');
+
   const fetchCurrentMonthQuestionCount = async () => {
     try {
       if (user) {
         const response = await API.getCurrentMonthQuestionCount();
+        console.error('fetchCurrentMonthQuestionCount', response);
         if (response.success) {
           setCurrentMonthQuestionCount(response.count || 0);
         }
@@ -327,51 +341,6 @@ const HomeScreen = () => {
     await changeLanguage(newLanguage);
   };
 
-  const handleQuizAttempt = (quiz) => {
-    setSelectedQuiz(quiz);
-    setShowQuizModal(true);
-  };
-
-  const handleConfirmQuizStart = () => {
-    setShowQuizModal(false);
-    if (selectedQuiz) {
-      navigation.navigate('Quiz', { quizId: selectedQuiz._id });
-    }
-  };
-
-  const handleCancelQuizStart = () => {
-    setShowQuizModal(false);
-    setSelectedQuiz(null);
-  };
-
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty?.toLowerCase()) {
-      case 'easy':
-        return colors.success;
-      case 'medium':
-        return colors.warning;
-      case 'hard':
-        return colors.error;
-      default:
-        return colors.textSecondary;
-    }
-  };
-
-  const getLevelIcon = (level) => {
-    const icons = [
-      'star',
-      'rocket-launch',
-      'psychology',
-      'trending-up',
-      'emoji-events',
-      'diamond',
-      'workspace-premium',
-      'auto-awesome',
-      'auto-fix-high',
-      'celebration',
-    ];
-    return icons[level - 1] || 'star';
-  };
 
   if (loading) {
     return (
@@ -416,17 +385,12 @@ const HomeScreen = () => {
         />
 
         <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Search Bar */}
-        <SearchBar
-          onSearchPress={() => navigation.navigate('Search')}
-          placeholder="Search quizzes, categories, questions..."
-        />
+          style={styles.scrollView}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          showsVerticalScrollIndicator={false}
+        >
 
         {/* Header */}
         <LinearGradient
@@ -524,7 +488,7 @@ const HomeScreen = () => {
             onViewAllPress={() => navigation.navigate('Levels')}
             cardWidth={width * 0.75}
           >
-            {levels.slice(0, 8).map((level) => (
+            {levels?.map((level) => (
               <LevelCard
                 key={level._id}
                 level={level}
@@ -568,7 +532,7 @@ const HomeScreen = () => {
               </TouchableOpacity>
             </View>
             <View style={styles.topPerformersGrid}>
-              {topPerformers.slice(0, 10).map((performer, index) => (
+              {topPerformers?.map((performer, index) => (
                 <TopPerformerCard
                   key={performer._id}
                   performer={performer}
@@ -599,7 +563,7 @@ const HomeScreen = () => {
           <Carousel
             title="📖 Latest Blogs & Articles"
             onViewAllPress={() => navigation.navigate('Articles')}
-            cardWidth={width * 0.8}
+            cardWidth={width * 0.9}
           >
             {blogs.map((blog) => (
               <BlogCard
@@ -608,7 +572,7 @@ const HomeScreen = () => {
                 onPress={() =>
                   navigation.navigate('ArticleDetail', { articleId: blog._id })
                 }
-                width={width * 0.8}
+                width={width * 0.9}
               />
             ))}
           </Carousel>
@@ -633,6 +597,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    marginBottom: 10,
   },
   header: {
     paddingTop: 20,
@@ -690,7 +655,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginHorizontal: 20,
+    marginHorizontal: 0,
     marginBottom: 16,
   },
   viewAllText: {

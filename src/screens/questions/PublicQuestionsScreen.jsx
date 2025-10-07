@@ -20,6 +20,7 @@ import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
+// Ensure there are no named or duplicate imports for Card or TopBar
 
 
 const PublicQuestionsScreen = () => {
@@ -172,7 +173,7 @@ const PublicQuestionsScreen = () => {
       <View style={styles.questionHeader}>
         <View style={styles.questionMeta}>
           <Text style={[styles.questionCategory, { color: colors.primary }]}>
-            {question.category.name}
+            {question.category?.name || ''}
           </Text>
           <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(question.difficulty) + '20' }]}>
             <Text style={[styles.difficultyText, { color: getDifficultyColor(question.difficulty) }]}>
@@ -300,7 +301,7 @@ const PublicQuestionsScreen = () => {
         <View style={styles.authorInfo}>
           <Icon name="person" size={14} color={colors.textSecondary} />
           <Text style={[styles.authorText, { color: colors.textSecondary }]}>
-            {question.author.name}
+            {question.author?.name || 'Anonymous'}
           </Text>
         </View>
         <Text style={[styles.dateText, { color: colors.textSecondary }]}>
@@ -407,7 +408,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 16,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 2,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',

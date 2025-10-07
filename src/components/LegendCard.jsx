@@ -59,10 +59,16 @@ const LegendCard = ({
     }
   };
 
+  const now = new Date();
+  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const year = previousMonth.getFullYear();
+  const month = String(previousMonth.getMonth() + 1).padStart(2, '0');
+  const monthYear = `${month}-${year}`;
+
   const rankColors = getRankColors(legend.rank);
 
   return (
-    <View style={[styles.container, { width }]}>
+    <View style={[styles.container, { width, backgroundColor: colors.surface }]}> 
       <LinearGradient
         colors={[rankColors.primary + '20', rankColors.secondary + '10']}
         style={styles.gradient}
@@ -70,55 +76,46 @@ const LegendCard = ({
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.header}>
-          <View style={[styles.rankContainer, { backgroundColor: rankColors.primary }]}>
+          <View style={[styles.rankContainer, { backgroundColor: rankColors.primary }]}> 
             <Icon name={getRankIcon(legend.rank)} size={24} color={colors.primary} />
           </View>
           <View style={styles.rankInfo}>
-            <Text style={[styles.rankText, { color: colors.text }]}>
-              #{legend.rank} Legend
+            <Text style={[styles.rankText, { color: colors.text }]}> 
+              #{legend.rank}
             </Text>
-            <Text style={[styles.period, { color: colors.textSecondary }]}>
-              {legend.month} {legend.year}
+            <Text style={[styles.period, { color: colors.textSecondary }]}> 
+              {monthYear}
             </Text>
           </View>
         </View>
 
-        <View style={styles.avatarContainer}>
-          <View style={[styles.avatar, { backgroundColor: rankColors.primary + '20' }]}>
-            <Icon name="person" size={40} color={rankColors.primary} />
-          </View>
-          <View style={[styles.crown, { backgroundColor: rankColors.primary }]}>
-            <Icon name="star" size={16} color="white" />
-          </View>
-        </View>
-
-        <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
-          {legend.name}
+        <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}> 
+          {legend.userName}
         </Text>
 
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Icon name="quiz" size={16} color={colors.textSecondary} />
-            <Text style={[styles.statValue, { color: colors.text }]}>{legend.score}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Points</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{legend.highScoreWins || legend.highScoreQuizzes}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>High Score Wins</Text>
           </View>
           <View style={styles.statItem}>
-            <Icon name="trending-up" size={16} color={colors.textSecondary} />
-            <Text style={[styles.statValue, { color: colors.text }]}>{legend.quizCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Quizzes</Text>
+            <Icon name="percent" size={16} color={colors.textSecondary} />
+            <Text style={[styles.statValue, { color: colors.text }]}>{legend.accuracy}%</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Accuracy</Text>
           </View>
           <View style={styles.statItem}>
-            <Icon name="workspace-premium" size={16} color={colors.textSecondary} />
-            <Text style={[styles.statValue, { color: colors.text }]}>{legend.level}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Level</Text>
+            <Icon name="currency-rupee" size={16} color={colors.textSecondary} />
+            <Text style={[styles.statValue, { color: colors.text }]}>{legend.rewardAmount?.toLocaleString?.() || legend.rewardAmount}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Prize</Text>
           </View>
         </View>
 
-        <View style={[styles.legendBadge, { backgroundColor: rankColors.primary }]}>
+        <View style={[styles.legendBadge, { backgroundColor: rankColors.primary }]}> 
           <Icon name="verified" size={14} color="white" />
           <Text style={styles.legendText}>Monthly Legend</Text>
         </View>
-        </LinearGradient>
+      </LinearGradient>
     </View>
   );
 };
@@ -127,6 +124,7 @@ const styles = StyleSheet.create({
   container: {
     marginRight: 16,
     borderRadius: 16,
+     marginBottom: 2,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {

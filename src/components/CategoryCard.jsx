@@ -57,7 +57,7 @@ const CategoryCard = ({
 
   return (
     <TouchableOpacity
-      style={[styles.container, { width }]}
+      style={[styles.container, { width, backgroundColor: colors.surface }]}
       onPress={onPress}
       activeOpacity={0.8}
     >
@@ -104,6 +104,7 @@ const CategoryCard = ({
 const styles = StyleSheet.create({
   container: {
     marginRight: 16,
+    marginBottom: 2,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
