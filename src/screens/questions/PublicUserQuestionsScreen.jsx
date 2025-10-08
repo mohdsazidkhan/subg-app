@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   TextInput,
   RefreshControl,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -17,7 +17,6 @@ import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
-import Button from '../../components/Button';
 
 
 const PublicUserQuestionsScreen = () => {
@@ -25,19 +24,23 @@ const PublicUserQuestionsScreen = () => {
   const { colors } = useTheme();
   const { t } = useTranslation();
 
-  const [items, setItems] = useState<PublicQuestion[]>([]);
+  const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const load = useCallback(async () => {
+  // Initial load - replaces all items
+  const load = useCallback(async (resetPage = false) => {
+    const currentPage = resetPage ? 1 : page;
     setLoading(true);
     try {
       const res = await API.getPublicUserQuestions({
-        page,
+        page: currentPage,
         limit,
         search: searchTerm,
       });
@@ -45,6 +48,8 @@ const PublicUserQuestionsScreen = () => {
       if (res?.success) {
         setItems(res.data || []);
         setTotal(res.pagination?.total || 0);
+        setPage(currentPage);
+        setHasMore((res.data || []).length === limit && (res.data || []).length < (res.pagination?.total || 0));
       }
     } catch (e) {
       console.error('Failed to load public questions', e);
@@ -57,13 +62,43 @@ const PublicUserQuestionsScreen = () => {
     }
   }, [page, limit, searchTerm]);
 
+  // Load more - appends to existing items
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || loading) return;
+    
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    
+    try {
+      const res = await API.getPublicUserQuestions({
+        page: nextPage,
+        limit,
+        search: searchTerm,
+      });
+
+      if (res?.success) {
+        const newItems = res.data || [];
+        setItems(prev => [...prev, ...newItems]);
+        setPage(nextPage);
+        setHasMore(newItems.length === limit && (items.length + newItems.length) < (res.pagination?.total || 0));
+      }
+    } catch (e) {
+      console.error('Failed to load more questions', e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [page, limit, searchTerm, loadingMore, hasMore, loading, items.length]);
+
   useEffect(() => {
     load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await load();
+    setPage(1);
+    setHasMore(true);
+    await load(true);
     setRefreshing(false);
   };
 
@@ -173,11 +208,12 @@ const PublicUserQuestionsScreen = () => {
     return (first + last).toUpperCase() || 'U';
   };
 
-  const renderQuestionItem = (row) => {
+  const renderQuestionItem = ({ item: row, index }) => {
     const user = row.userId || {};
+    const serialNumber = index + 1;
 
     return (
-      <Card key={row._id} style={[styles.questionCard, { backgroundColor: colors.surface }]}>
+      <Card style={[styles.questionCard, { backgroundColor: colors.surface }]}>
         <View style={styles.questionHeader}>
           <View style={styles.userInfo}>
             <View style={styles.avatar}>
@@ -204,6 +240,7 @@ const PublicUserQuestionsScreen = () => {
         </View>
 
         <Text style={[styles.questionText, { color: colors.text }]}>
+          <Text style={styles.serialNumber}>#{serialNumber}. </Text>
           {row.questionText}
         </Text>
 
@@ -306,7 +343,88 @@ const PublicUserQuestionsScreen = () => {
     );
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const renderHeader = () => (
+    <>
+      {/* Search */}
+      <Card style={[styles.searchCard, { backgroundColor: colors.surface }]}>
+        <View style={styles.searchContainer}>
+          <Icon name="search" size={20} color={colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search questions..."
+            placeholderTextColor={colors.textSecondary}
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            onSubmitEditing={() => {
+              setPage(1);
+              setHasMore(true);
+              load(true);
+            }}
+            returnKeyType="search"
+          />
+          <TouchableOpacity
+            onPress={() => {
+              setPage(1);
+              setHasMore(true);
+              load(true);
+            }}
+            style={[styles.searchButton, { backgroundColor: colors.primary }]}
+          >
+            <Text style={styles.searchButtonText}>Search</Text>
+          </TouchableOpacity>
+        </View>
+      </Card>
+
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            Loading questions...
+          </Text>
+        </View>
+      )}
+    </>
+  );
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    
+    return (
+      <View style={styles.footerLoading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingMoreText, { color: colors.textSecondary }]}>
+          Loading more questions...
+        </Text>
+      </View>
+    );
+  };
+
+  const renderEmpty = () => {
+    if (loading) return null;
+    
+    return (
+      <Card style={[styles.emptyCard, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+          No questions found
+        </Text>
+      </Card>
+    );
+  };
+
+  const renderEndMessage = () => {
+    if (!hasMore && items.length > 0) {
+      return (
+        <View style={styles.endMessage}>
+          <Text style={[styles.endMessageText, { color: colors.textSecondary }]}>
+            🎉 You've reached the end!
+          </Text>
+          <Text style={[styles.endMessageSubtext, { color: colors.textSecondary }]}>
+            No more questions to load
+          </Text>
+        </View>
+      );
+    }
+    return null;
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -316,98 +434,25 @@ const PublicUserQuestionsScreen = () => {
         onBackPress={() => navigation.goBack()}
       />
 
-      <ScrollView
-        style={styles.scrollView}
+      <FlatList
+        data={items}
+        renderItem={renderQuestionItem}
+        keyExtractor={(item) => item._id}
+        ListHeaderComponent={renderHeader}
+        ListFooterComponent={() => (
+          <>
+            {renderFooter()}
+            {renderEndMessage()}
+          </>
+        )}
+        ListEmptyComponent={renderEmpty}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-      >
-        {/* Search */}
-        <Card style={[styles.searchCard, { backgroundColor: colors.surface }]}>
-          <View style={styles.searchContainer}>
-            <Icon name="search" size={20} color={colors.textSecondary} />
-            <TextInput
-              style={[styles.searchInput, { color: colors.text }]}
-              placeholder="Search questions..."
-              placeholderTextColor={colors.textSecondary}
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-            />
-            <TouchableOpacity
-              onPress={() => {
-                setPage(1);
-                load();
-              }}
-              style={[styles.searchButton, { backgroundColor: colors.primary }]}
-            >
-              <Text style={styles.searchButtonText}>Search</Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
-
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-              Loading questions...
-            </Text>
-          </View>
-        )}
-
-        {/* Questions List */}
-        {!items || items.length === 0 ? (
-          <Card style={[styles.emptyCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              No questions found
-            </Text>
-          </Card>
-        ) : (
-          <View style={styles.questionsList}>
-            {items.map((row) => renderQuestionItem(row))}
-          </View>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Card style={[styles.paginationCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.paginationInfo, { color: colors.textSecondary }]}>
-              Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} questions
-            </Text>
-            <View style={styles.paginationButtons}>
-              <TouchableOpacity
-                disabled={page <= 1}
-                style={[
-                  styles.paginationButton,
-                  {
-                    backgroundColor: page <= 1 ? colors.textSecondary : colors.primary,
-                    opacity: page <= 1 ? 0.5 : 1,
-                  },
-                ]}
-                onPress={() => setPage(p => p - 1)}
-              >
-                <Text style={styles.paginationButtonText}>Previous</Text>
-              </TouchableOpacity>
-
-              <Text style={[styles.pageInfo, { color: colors.text }]}>
-                Page {page} of {totalPages}
-              </Text>
-
-              <TouchableOpacity
-                disabled={page >= totalPages}
-                style={[
-                  styles.paginationButton,
-                  {
-                    backgroundColor: page >= totalPages ? colors.textSecondary : colors.primary,
-                    opacity: page >= totalPages ? 0.5 : 1,
-                  },
-                ]}
-                onPress={() => setPage(p => p + 1)}
-              >
-                <Text style={styles.paginationButtonText}>Next</Text>
-              </TouchableOpacity>
-            </View>
-          </Card>
-        )}
-      </ScrollView>
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        contentContainerStyle={styles.listContainer}
+      />
     </View>
   );
 };
@@ -416,8 +461,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
+  listContainer: {
+    paddingBottom: 20,
   },
   searchCard: {
     margin: 20,
@@ -502,6 +547,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 24,
   },
+  serialNumber: {
+    color: '#F59E0B',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
   optionsContainer: {
     marginBottom: 16,
   },
@@ -552,34 +602,25 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
   },
-  paginationCard: {
-    margin: 20,
-    padding: 16,
-    borderRadius: 12,
+  footerLoading: {
+    padding: 20,
     alignItems: 'center',
   },
-  paginationInfo: {
+  loadingMoreText: {
     fontSize: 14,
-    marginBottom: 12,
+    marginTop: 8,
   },
-  paginationButtons: {
-    flexDirection: 'row',
+  endMessage: {
+    padding: 20,
     alignItems: 'center',
-    gap: 16,
   },
-  paginationButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  paginationButtonText: {
-    color: 'white',
-    fontSize: 14,
+  endMessageText: {
+    fontSize: 16,
     fontWeight: '600',
+    marginBottom: 4,
   },
-  pageInfo: {
+  endMessageSubtext: {
     fontSize: 14,
-    fontWeight: '600',
   },
 });
 

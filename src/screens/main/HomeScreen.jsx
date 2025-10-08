@@ -33,6 +33,7 @@ import AddQuestionSection from '../../components/AddQuestionSection';
 import ReferralSection from '../../components/ReferralSection';
 import NetworkStatusIndicator from '../../components/NetworkStatusIndicator';
 import OfflineFallback from '../../components/OfflineFallback';
+import CreateQuizEarnSection from '../../components/CreateQuizEarnSection';
 
 const { width } = Dimensions.get('window');
 
@@ -556,6 +557,18 @@ const HomeScreen = () => {
           isProUser={user?.subscriptionStatus === 'pro'}
           currentMonthCount={currentMonthQuestionCount}
           monthlyLimit={50}
+        />
+
+        {/* Create Quiz & Earn Subscription Section */}
+        <CreateQuizEarnSection
+          onCreatePress={() => {
+            if (user) {
+              navigation.navigate('CreateQuiz');
+            } else {
+              navigation.navigate('Register');
+            }
+          }}
+          onMyQuizzesPress={() => navigation.navigate('MyQuizzes')}
         />
 
         {/* Blogs Section */}
