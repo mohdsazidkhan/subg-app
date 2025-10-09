@@ -126,6 +126,11 @@ const ProfileScreen = () => {
           <Text style={[styles.userName, { color: colors.text }]}>
             {user?.name || 'User'}
           </Text>
+          {user?.username && (
+            <Text style={[styles.userUsername, { color: colors.primary }]}>
+              @{user.username}
+            </Text>
+          )}
           <Text style={[styles.userEmail, { color: colors.textSecondary }]}>
             {user?.email || 'user@example.com'}
           </Text>
@@ -306,10 +311,15 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 4,
+  },
+  userUsername: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 6,
   },
   userEmail: {
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 12,
   },
   subscriptionBadge: {

@@ -45,6 +45,10 @@ import TermsScreen from '../screens/marketing/TermsScreen';
 import PrivacyScreen from '../screens/marketing/PrivacyScreen';
 import RefundScreen from '../screens/marketing/RefundScreen';
 import MoreScreen from '../screens/main/MoreScreen';
+import PublicProfileScreen from '../screens/profile/PublicProfileScreen';
+import FollowersListScreen from '../screens/profile/FollowersListScreen';
+import FollowingListScreen from '../screens/profile/FollowingListScreen';
+import UserSearchScreen from '../screens/profile/UserSearchScreen';
 
 // Components
 import { useAuth } from '../contexts/AuthContext';
@@ -234,6 +238,10 @@ function AppNavigator() {
       <Stack.Screen name="Terms" component={TermsScreen} />
       <Stack.Screen name="Privacy" component={PrivacyScreen} />
       <Stack.Screen name="Refund" component={RefundScreen} />
+      <Stack.Screen name="PublicProfile" component={PublicProfileScreen} />
+      <Stack.Screen name="FollowersList" component={FollowersListScreen} />
+      <Stack.Screen name="FollowingList" component={FollowingListScreen} />
+      <Stack.Screen name="UserSearch" component={UserSearchScreen} />
     </Stack.Navigator>
   );
 }
