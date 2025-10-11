@@ -33,16 +33,18 @@ const PublicUserQuestionsScreen = () => {
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchActive, setIsSearchActive] = useState(false);
 
   // Initial load - replaces all items
   const load = useCallback(async (resetPage = false) => {
     const currentPage = resetPage ? 1 : page;
     setLoading(true);
     try {
+      const searchParam = searchTerm.trim() || '';
       const res = await API.getPublicUserQuestions({
         page: currentPage,
         limit,
-        search: searchTerm,
+        search: searchParam,
       });
 
       if (res?.success) {
@@ -70,10 +72,11 @@ const PublicUserQuestionsScreen = () => {
     const nextPage = page + 1;
     
     try {
+      const searchParam = searchTerm.trim() || '';
       const res = await API.getPublicUserQuestions({
         page: nextPage,
         limit,
-        search: searchTerm,
+        search: searchParam,
       });
 
       if (res?.success) {
@@ -89,10 +92,34 @@ const PublicUserQuestionsScreen = () => {
     }
   }, [page, limit, searchTerm, loadingMore, hasMore, loading, items.length]);
 
+  // Handle search
+  const handleSearch = useCallback(() => {
+    setPage(1);
+    setHasMore(true);
+    setIsSearchActive(true);
+    load(true);
+  }, [load]);
+
+  // Handle clear search
+  const handleClearSearch = useCallback(() => {
+    setSearchTerm('');
+    setPage(1);
+    setHasMore(true);
+    setIsSearchActive(false);
+  }, []);
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reload when searchTerm is cleared
+  useEffect(() => {
+    if (searchTerm === '' && !isSearchActive) {
+      load(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, isSearchActive]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -351,26 +378,35 @@ const PublicUserQuestionsScreen = () => {
           <Icon name="search" size={20} color={colors.textSecondary} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search questions..."
+            placeholder="Search by question, name, username, email..."
             placeholderTextColor={colors.textSecondary}
             value={searchTerm}
             onChangeText={setSearchTerm}
             onSubmitEditing={() => {
-              setPage(1);
-              setHasMore(true);
-              load(true);
+              if (isSearchActive) {
+                handleClearSearch();
+              } else {
+                handleSearch();
+              }
             }}
             returnKeyType="search"
           />
           <TouchableOpacity
             onPress={() => {
-              setPage(1);
-              setHasMore(true);
-              load(true);
+              if (isSearchActive) {
+                handleClearSearch();
+              } else {
+                handleSearch();
+              }
             }}
-            style={[styles.searchButton, { backgroundColor: colors.primary }]}
+            style={[
+              styles.searchButton, 
+              { backgroundColor: isSearchActive ? colors.textSecondary : colors.primary }
+            ]}
           >
-            <Text style={styles.searchButtonText}>Search</Text>
+            <Text style={styles.searchButtonText}>
+              {isSearchActive ? 'Clear' : 'Search'}
+            </Text>
           </TouchableOpacity>
         </View>
       </Card>
