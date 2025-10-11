@@ -259,16 +259,21 @@ class ApiService {
     return this.request(`/api/student/quizzes/${id}`);
   }
 
+  // Fetch quiz questions for attempt
+  async getQuizQuestions(quizId) {
+    return this.request(`/api/student/quizzes/${quizId}/questions`);
+  }
+
   /**
    * Submit quiz answers
    * @param {string} quizId - Quiz ID
-   * @param {Object} answers - Quiz answers
+   * @param {Object} payload - answers payload
    * @returns {Promise<any>} Submission response
    */
-  async submitQuiz(quizId, answers) {
+  async submitQuiz(quizId, payload) {
     return this.request(`/api/student/quizzes/${quizId}/attempt`, {
       method: 'POST',
-      body: JSON.stringify({ answers }),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -586,6 +591,11 @@ class ApiService {
 
   async getArticleById(id) {
     return this.request(`/api/public/articles/${id}`);
+  }
+
+  // Some callers may pass slug instead of ID. Mirror web API with a helper.
+  async getArticleBySlug(slug) {
+    return this.request(`/api/public/articles/${slug}`);
   }
 
   async getArticleCategories() {

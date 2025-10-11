@@ -43,14 +43,6 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   /**
-   * Fill test credentials for development
-   */
-  const handleTestLogin = () => {
-    setIdentifier('demo@example.com');
-    setPassword('password123');
-  };
-
-  /**
    * Handle login form submission
    */
   const handleLogin = async () => {
@@ -124,7 +116,7 @@ const LoginScreen = () => {
           </View>
 
           {/* Google Login Button */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.googleButton, { borderColor: colors.border }]}
             onPress={handleGoogleLogin}
           >
@@ -132,7 +124,7 @@ const LoginScreen = () => {
             <Text style={[styles.googleButtonText, { color: colors.text }]}>
               Sign in with Google
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Divider */}
           <View style={styles.divider}>
@@ -221,17 +213,6 @@ const LoginScreen = () => {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Test Login Button (Development only) */}
-          {__DEV__ && (
-            <TouchableOpacity
-              style={[styles.testButton, { borderColor: colors.border }]}
-              onPress={handleTestLogin}
-            >
-              <Text style={[styles.testButtonText, { color: colors.textSecondary }]}>
-                Fill Test Credentials
-              </Text>
-            </TouchableOpacity>
-          )}
 
           {/* Register Link */}
           <View style={styles.registerContainer}>

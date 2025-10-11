@@ -38,69 +38,76 @@ const SubscriptionScreen = () => {
     try {
       setLoading(true);
 
-      // Mock subscription plans - replace with actual API call
-      const mockPlans = [
+      // Align prices with subg-frontend config (monthly pricing)
+      const alignedPlans = [
         {
           _id: 'free',
           name: 'Free',
-          description: 'Basic access to quizzes',
+          description: 'Unlimited Quiz Access (Levels 0-3)',
           price: 0,
-          duration: 'Forever',
+          duration: 'Monthly',
           features: [
-            'Access to basic quizzes',
-            'Limited quiz attempts',
-            'Basic leaderboard access',
-            'Community support',
+            'Unlimited Quiz Access (Levels 0-3)',
+            'Community Access',
+            'Basic Analytics',
+            'Email Support',
           ],
         },
         {
           _id: 'basic',
           name: 'Basic',
-          description: 'Enhanced quiz experience',
-          price: 99,
+          description: 'Unlock Levels 0-6 with detailed analytics',
+          price: 9,
           duration: 'Monthly',
           features: [
-            'All free features',
-            'Unlimited quiz attempts',
-            'Advanced analytics',
-            'Priority support',
-            'Ad-free experience',
+            'Unlimited Quiz Access (Levels 0-6)',
+            'Community Access',
+            'Detailed Analytics',
+            'Email Support',
           ],
         },
         {
           _id: 'premium',
           name: 'Premium',
-          description: 'Full access to all features',
-          price: 199,
+          description: 'Unlock Levels 0-9 & priority support',
+          price: 49,
           duration: 'Monthly',
           features: [
-            'All basic features',
-            'Exclusive premium quizzes',
-            'Detailed performance reports',
-            '24/7 priority support',
-            'Early access to new features',
-            'Custom study plans',
+            'Unlimited Quiz Access (Levels 0-9)',
+            'Community Access',
+            'Advanced Analytics',
+            'Priority Support',
+            'Live Quizzes',
+            'Exclusive Badges',
+            'Bonus Content',
+            'Advanced Reports',
           ],
           isPopular: true,
         },
         {
           _id: 'pro',
           name: 'Pro',
-          description: 'For serious learners',
-          price: 399,
+          description: 'All levels (0-10) + advanced features',
+          price: 99,
           duration: 'Monthly',
           features: [
-            'All premium features',
-            'Personal tutor sessions',
-            'Advanced analytics dashboard',
-            'Custom quiz creation',
-            'API access',
-            'White-label options',
+            'Unlimited Quiz Access (All Levels 0-10)',
+            'Community Access',
+            'Advanced Analytics',
+            'Priority Support',
+            'Live Quizzes',
+            'Exclusive Badges',
+            'Bonus Content',
+            'Advanced Reports',
+            'Data Export',
+            'API Access',
+            'Custom Categories',
+            'All Premium Features',
           ],
         },
       ];
 
-      setPlans(mockPlans);
+      setPlans(alignedPlans);
     } catch (error) {
       console.error('Error fetching subscription plans:', error);
       showMessage({

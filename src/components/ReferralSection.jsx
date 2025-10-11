@@ -175,7 +175,9 @@ const ReferralSection = ({
 
 const styles = StyleSheet.create({
   container: {
-    margin: 20,
+    marginHorizontal: 20,
+    marginTop: 0,
+    marginBottom: 10,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',

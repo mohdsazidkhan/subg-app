@@ -68,7 +68,7 @@ const HomeScreen = () => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [userLevelData, setUserLevelData] = useState(null);
   const [currentMonthQuestionCount, setCurrentMonthQuestionCount] = useState(0);
-
+  console.log(topPerformers, 'topPerformers')
   useEffect(() => {
     fetchData();
     fetchProfileCompletion();
@@ -89,16 +89,19 @@ const HomeScreen = () => {
         return;
       }
       
+      // First fetch categories, then subcategories
       await Promise.all([
         fetchHomeData(),
         fetchCategories(),
-        fetchSubcategories(),
         fetchLevels(),
         fetchTopPerformers(),
         fetchMonthlyLegends(),
         fetchBlogs(),
         fetchCurrentMonthQuestionCount(),
       ]);
+      
+      // Then fetch subcategories after categories are loaded
+      await fetchSubcategories();
     } catch (error) {
       console.error('Error fetching data:', error);
       
@@ -165,7 +168,6 @@ const HomeScreen = () => {
   const fetchTopPerformers = async () => {
     try {
       const response = await API.getPublicTopPerformersMonthly(10, user?._id);
-      console.error('getPublicTopPerformersMonthly', response);
       if (response.success) {
         setTopPerformers(response.data.top);
       }
@@ -210,15 +212,15 @@ const HomeScreen = () => {
     }
   };
 
-  console.log(blogs, 'blogsblogs');
 
   const fetchCurrentMonthQuestionCount = async () => {
     try {
       if (user) {
         const response = await API.getCurrentMonthQuestionCount();
-        console.error('fetchCurrentMonthQuestionCount', response);
+        console.log('fetchCurrentMonthQuestionCount', response);
         if (response.success) {
-          setCurrentMonthQuestionCount(response.count || 0);
+          // Backend returns response.data.currentCount, not response.count
+          setCurrentMonthQuestionCount(response.data?.currentCount || 0);
         }
       }
     } catch (error) {
@@ -494,7 +496,7 @@ const HomeScreen = () => {
                 key={level._id}
                 level={level}
                 onPress={() =>
-                  navigation.navigate('LevelDetail', { levelId: level._id })
+                  navigation.navigate('LevelDetail', { levelId: level._id, levelNumber: level.level })
                 }
                 width={width * 0.75}
               />
@@ -519,30 +521,22 @@ const HomeScreen = () => {
           </Carousel>
         )}
 
-        {/* Top 10 Performers Current Month */}
+        {/* Top 10 Performers Current Month - Carousel like Previous Month Legends */}
         {topPerformers.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                🏅 Top 10 Performers This Month
-              </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')}>
-                <Text style={[styles.viewAllText, { color: colors.primary }]}>
-                  View All
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.topPerformersGrid}>
-              {topPerformers?.map((performer, index) => (
-                <TopPerformerCard
-                  key={performer._id}
-                  performer={performer}
-                  rank={index + 1}
-                  width={(width - 48) / 2}
-                />
-              ))}
-            </View>
-          </View>
+          <Carousel
+            title="🏅 Top 10 Performers This Month"
+            onViewAllPress={() => navigation.navigate('Leaderboard')}
+            cardWidth={width * 0.7}
+          >
+            {topPerformers.map((performer, index) => (
+              <TopPerformerCard
+                key={performer._id}
+                performer={performer}
+                rank={index + 1}
+                width={width * 0.7}
+              />
+            ))}
+          </Carousel>
         )}
 
         {/* Referral Section */}
@@ -563,7 +557,8 @@ const HomeScreen = () => {
         <CreateQuizEarnSection
           onCreatePress={() => {
             if (user) {
-              navigation.navigate('CreateQuiz');
+              // Navigate to Post tab's CreateUserQuiz nested screen
+              navigation.navigate('PostQuestion', { screen: 'CreateUserQuiz' });
             } else {
               navigation.navigate('Register');
             }
@@ -583,7 +578,7 @@ const HomeScreen = () => {
                 key={blog._id}
                 blog={blog}
                 onPress={() =>
-                  navigation.navigate('ArticleDetail', { articleId: blog._id })
+                  navigation.navigate('ArticleDetail', { articleId: blog.slug || blog._id })
                 }
                 width={width * 0.9}
               />

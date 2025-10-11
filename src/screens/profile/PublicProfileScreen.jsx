@@ -12,10 +12,12 @@ import {
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URL } from '../../config/env';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const PublicProfileScreen = ({ route, navigation }) => {
   const { username } = route.params;
   const { user: currentUser } = useAuth();
+  const { colors, isDark } = useTheme();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -104,20 +106,20 @@ const PublicProfileScreen = ({ route, navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text style={styles.loadingText}>Loading profile...</Text>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading profile...</Text>
       </View>
     );
   }
 
   if (error || !profile) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorTitle}>Profile Not Found</Text>
-        <Text style={styles.errorText}>{error || 'User not found'}</Text>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorTitle, { color: colors.text }]}>Profile Not Found</Text>
+        <Text style={[styles.errorText, { color: colors.textSecondary }]}>{error || 'User not found'}</Text>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: colors.primary }]}
           onPress={() => navigation.goBack()}
         >
           <Text style={styles.backButtonText}>Go Back</Text>
@@ -128,26 +130,26 @@ const PublicProfileScreen = ({ route, navigation }) => {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <View style={styles.coverImage} />
+      <View style={[styles.coverImage, { backgroundColor: colors.primary }]} />
       
-      <View style={styles.profileHeader}>
+      <View style={[styles.profileHeader, { backgroundColor: colors.surface }]}>
         <Image
           source={{ uri: profile.profilePicture || 'https://via.placeholder.com/150' }}
           style={styles.avatar}
         />
         
-        <Text style={styles.name}>{profile.name}</Text>
+        <Text style={[styles.name, { color: colors.text }]}>{profile.name}</Text>
         {profile.username && (
-          <Text style={styles.username}>@{profile.username}</Text>
+          <Text style={[styles.username, { color: colors.textSecondary }]}>@{profile.username}</Text>
         )}
         
         {profile.bio && (
-          <Text style={styles.bio}>{profile.bio}</Text>
+          <Text style={[styles.bio, { color: colors.textSecondary }]}>{profile.bio}</Text>
         )}
 
         <View style={styles.statsRow}>
@@ -155,35 +157,29 @@ const PublicProfileScreen = ({ route, navigation }) => {
             style={styles.statItem}
             onPress={() => navigation.navigate('FollowersList', { username: profile.username })}
           >
-            <Text style={styles.statValue}>{profile.followersCount || 0}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{profile.followersCount || 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Followers</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.statItem}
             onPress={() => navigation.navigate('FollowingList', { username: profile.username })}
           >
-            <Text style={styles.statValue}>{profile.followingCount || 0}</Text>
-            <Text style={styles.statLabel}>Following</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{profile.followingCount || 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Following</Text>
           </TouchableOpacity>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{profile.profileViews || 0}</Text>
-            <Text style={styles.statLabel}>Views</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{profile.profileViews || 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Views</Text>
           </View>
         </View>
 
         {!isOwnProfile && (
           <TouchableOpacity
-            style={[
-              styles.followButton,
-              isFollowing && styles.followingButton
-            ]}
+            style={[styles.followButton, { backgroundColor: isFollowing ? colors.background : colors.primary, borderColor: colors.border, borderWidth: isFollowing ? 1 : 0 }]}
             onPress={handleFollowToggle}
             disabled={followLoading}
           >
-            <Text style={[
-              styles.followButtonText,
-              isFollowing && styles.followingButtonText
-            ]}>
+            <Text style={[styles.followButtonText, { color: isFollowing ? colors.text : '#fff' }]}>
               {followLoading ? 'Loading...' : (isFollowing ? 'Following' : 'Follow')}
             </Text>
           </TouchableOpacity>
@@ -199,10 +195,10 @@ const PublicProfileScreen = ({ route, navigation }) => {
         )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Level & Badges</Text>
+      <View style={[styles.section, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Level & Badges</Text>
         <View style={styles.levelCard}>
-          <View style={styles.levelBadge}>
+          <View style={[styles.levelBadge, { backgroundColor: colors.primary }]}>
             <Text style={styles.levelNumber}>
               {profile.level?.currentLevel?.number || 0}
             </Text>
@@ -214,8 +210,8 @@ const PublicProfileScreen = ({ route, navigation }) => {
           {profile.badges && profile.badges.length > 0 && (
             <View style={styles.badgesContainer}>
               {profile.badges.map((badge, index) => (
-                <View key={index} style={styles.badge}>
-                  <Text style={styles.badgeText}>{badge}</Text>
+                <View key={index} style={[styles.badge, { backgroundColor: colors.background }]}>
+                  <Text style={[styles.badgeText, { color: colors.text }]}>{badge}</Text>
                 </View>
               ))}
             </View>
@@ -224,34 +220,34 @@ const PublicProfileScreen = ({ route, navigation }) => {
       </View>
 
       {(profile.isPublicProfile || isOwnProfile) && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quiz Statistics</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quiz Statistics</Text>
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <Text style={styles.statCardValue}>
+            <View style={[styles.statCard, { backgroundColor: colors.background }]}>
+              <Text style={[styles.statCardValue, { color: colors.primary }]}>
                 {profile.level?.progress?.quizzesPlayed || 0}
               </Text>
-              <Text style={styles.statCardLabel}>Total Quizzes</Text>
+              <Text style={[styles.statCardLabel, { color: colors.textSecondary }]}>Total Quizzes</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statCardValue}>
+            <View style={[styles.statCard, { backgroundColor: colors.background }]}>
+              <Text style={[styles.statCardValue, { color: colors.primary }]}>
                 {profile.level?.stats?.highScoreRate || 0}%
               </Text>
-              <Text style={styles.statCardLabel}>High Score Rate</Text>
+              <Text style={[styles.statCardLabel, { color: colors.textSecondary }]}>High Score Rate</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statCardValue}>
+            <View style={[styles.statCard, { backgroundColor: colors.background }]}>
+              <Text style={[styles.statCardValue, { color: colors.primary }]}>
                 {profile.level?.stats?.averageScore || 0}%
               </Text>
-              <Text style={styles.statCardLabel}>Average Score</Text>
+              <Text style={[styles.statCardLabel, { color: colors.textSecondary }]}>Average Score</Text>
             </View>
           </View>
         </View>
       )}
 
       {!profile.isPublicProfile && !isOwnProfile && (
-        <View style={styles.privateMessage}>
-          <Text style={styles.privateMessageText}>🔒 This profile is private</Text>
+        <View style={[styles.privateMessage, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.privateMessageText, { color: colors.textSecondary }]}>🔒 This profile is private</Text>
         </View>
       )}
     </ScrollView>
@@ -261,13 +257,11 @@ const PublicProfileScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     padding: 20,
   },
   loadingText: {
@@ -321,7 +315,6 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 5,
   },
   username: {
@@ -331,7 +324,6 @@ const styles = StyleSheet.create({
   },
   bio: {
     fontSize: 14,
-    color: '#555',
     textAlign: 'center',
     paddingHorizontal: 20,
     marginBottom: 20,
@@ -352,7 +344,6 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
   },
   statLabel: {
     fontSize: 12,
@@ -360,7 +351,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   followButton: {
-    backgroundColor: '#007bff',
     paddingHorizontal: 40,
     paddingVertical: 12,
     borderRadius: 8,
@@ -392,7 +382,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   section: {
-    backgroundColor: '#fff',
     padding: 20,
     marginTop: 10,
   },
@@ -409,7 +398,6 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   levelBadge: {
-    backgroundColor: '#667eea',
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
@@ -449,7 +437,6 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',
@@ -457,7 +444,6 @@ const styles = StyleSheet.create({
   statCardValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#667eea',
   },
   statCardLabel: {
     fontSize: 12,
@@ -466,7 +452,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   privateMessage: {
-    backgroundColor: '#fff',
     padding: 40,
     alignItems: 'center',
     marginTop: 10,

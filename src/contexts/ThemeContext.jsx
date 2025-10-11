@@ -21,6 +21,7 @@ const lightColors = {
   accent: '#06B6D4', // Cyan-500
   background: '#FFFFFF', // White
   backgroundGradient: ['#fff4f4', '#ffffff', '#fffaea'], // Light gradient
+  cardBackground: '#FFFFFF', // Card base color used in gradients
   surface: '#F8FAFC', // Slate-50
   text: '#0F172A', // Slate-900 - darker for better contrast
   textSecondary: '#475569', // Slate-600 - darker for better contrast
@@ -40,6 +41,7 @@ const darkColors = {
   accent: '#06B6D4', // Cyan-500
   background: '#0F172A', // Slate-900 - darker background
   backgroundGradient: ['#1c1628', '#0f0e12', '#272009'], // Dark gradient
+  cardBackground: '#1E293B', // Card base color used in gradients (matches surface)
   surface: '#1E293B', // Slate-800 - lighter surface
   text: '#F8FAFC', // Slate-50 - lighter text
   textSecondary: '#CBD5E1', // Slate-300 - lighter secondary text

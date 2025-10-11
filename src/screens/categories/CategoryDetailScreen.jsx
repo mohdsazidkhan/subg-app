@@ -20,6 +20,7 @@ import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { showMessage } from 'react-native-flash-message';
+import QuizStartModal from '../../components/QuizStartModal';
 
 const CategoryDetailScreen = () => {
   const navigation = useNavigation();
@@ -34,6 +35,7 @@ const CategoryDetailScreen = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [startModalQuiz, setStartModalQuiz] = useState(null);
 
   const categoryId = route.params?.categoryId;
 
@@ -49,23 +51,32 @@ const CategoryDetailScreen = () => {
     try {
       setLoading(true);
       
-      // First, get the category details
-      const categoryResponse = await API.getCategoryById(categoryId);
-      if (categoryResponse.success) {
-        setCategory(categoryResponse.data);
-      }
-      
-      const [subCategoriesResponse, quizzesResponse] = await Promise.all([
-        API.getSubCategories(categoryId),
-        API.getCategoryQuizzes(categoryId),
+      // Match web frontend: fetch list and find category locally
+      try {
+        const categories = await API.getCategories();
+        if (Array.isArray(categories)) {
+          const found = categories.find((c) => c._id === categoryId);
+          setCategory(found || null);
+        }
+      } catch {}
+
+      const [subcats, levelQuizzes] = await Promise.all([
+        // Use the same endpoint as web for subcategories
+        API.getSubcategories(categoryId),
+        // Level-based quizzes by category with pagination defaults
+        API.getLevelBasedQuizzes({ category: categoryId, page: 1, limit: 20 }),
       ]);
 
-      if (subCategoriesResponse.success) {
-        setSubCategories(subCategoriesResponse.data || []);
+      if (Array.isArray(subcats)) {
+        setSubCategories(subcats);
+      } else if (subcats?.success) {
+        setSubCategories(subcats.data || []);
       }
 
-      if (quizzesResponse.success) {
-        setQuizzes(quizzesResponse.data || []);
+      if (levelQuizzes?.success) {
+        setQuizzes(levelQuizzes.data || []);
+      } else if (Array.isArray(levelQuizzes)) {
+        setQuizzes(levelQuizzes);
       }
     } catch (error) {
       console.error('Error fetching category data:', error);
@@ -106,7 +117,7 @@ const CategoryDetailScreen = () => {
       return;
     }
 
-    navigation.navigate('AttemptQuiz', { quiz });
+    navigation.navigate('AttemptQuiz', { quiz: { _id: quiz._id, name: quiz.title || quiz.name, timeLimit: quiz.timeLimit, questionsCount: quiz.questionsCount || quiz.questionCount || quiz.totalMarks, difficulty: quiz.difficulty } });
   };
 
   const renderSubCategoryItem = (subCategory) => (
@@ -168,7 +179,7 @@ const CategoryDetailScreen = () => {
           <View style={styles.quizStat}>
             <Icon name="quiz" size={14} color={colors.textSecondary} />
             <Text style={[styles.quizStatText, { color: colors.textSecondary }]}>
-              {quiz.questionsCount || 0} questions
+              {quiz.questionsCount || quiz.questionCount || quiz.totalMarks || (Array.isArray(quiz.questions) ? quiz.questions.length : 0)} questions
             </Text>
           </View>
           
@@ -187,6 +198,16 @@ const CategoryDetailScreen = () => {
           </View>
         </View>
       </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+        <Text style={{ fontSize: 12, color: colors.textSecondary }}>Category: {quiz.category?.name || category?.name || 'N/A'}</Text>
+        <Text style={{ fontSize: 12, color: colors.textSecondary }}>Subcategory: {quiz.subcategory?.name || 'N/A'}</Text>
+      </View>
+      <Button
+        title={'Start Quiz'}
+        onPress={() => setStartModalQuiz(quiz)}
+        variant={'primary'}
+        style={{ marginTop: 12 }}
+      />
     </TouchableOpacity>
   );
 
@@ -327,6 +348,16 @@ const CategoryDetailScreen = () => {
           )}
         </View>
       </ScrollView>
+      <QuizStartModal
+        visible={!!startModalQuiz}
+        quiz={startModalQuiz}
+        onClose={() => setStartModalQuiz(null)}
+        onConfirm={() => {
+          const q = startModalQuiz;
+          setStartModalQuiz(null);
+          handleQuizPress(q);
+        }}
+      />
     </View>
   );
 };

@@ -15,6 +15,7 @@ import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
 import { showMessage } from 'react-native-flash-message';
+import QuizStartModal from '../../components/QuizStartModal';
 
 const SubcategoryDetailScreen = () => {
   const navigation = useNavigation();
@@ -28,6 +29,7 @@ const SubcategoryDetailScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [startModalQuiz, setStartModalQuiz] = useState(null);
 
   const subcategoryId = route.params?.subcategoryId || '';
 
@@ -94,7 +96,7 @@ const SubcategoryDetailScreen = () => {
   };
 
   const handleQuizPress = (quiz) => {
-    navigation.navigate('Quiz', { quizId: quiz._id });
+    navigation.navigate('AttemptQuiz', { quiz: { _id: quiz._id, name: quiz.title || quiz.name, timeLimit: quiz.timeLimit } });
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -108,6 +110,14 @@ const SubcategoryDetailScreen = () => {
       default:
         return colors.textSecondary;
     }
+  };
+
+  const getQuestionsCount = (quiz) => {
+    if (typeof quiz.questionCount === 'number') return quiz.questionCount;
+    if (typeof quiz.questionsCount === 'number') return quiz.questionsCount;
+    if (typeof quiz.totalMarks === 'number') return quiz.totalMarks;
+    if (Array.isArray(quiz.questions)) return quiz.questions.length;
+    return 0;
   };
 
   const renderQuizCard = (quiz) => (
@@ -155,7 +165,7 @@ const SubcategoryDetailScreen = () => {
           <View style={styles.quizInfoItem}>
             <Icon name="quiz" size={14} color={colors.textSecondary} />
             <Text style={[styles.quizInfoText, { color: colors.textSecondary }]}>
-              {quiz.totalMarks || 'Variable'} Q
+              {getQuestionsCount(quiz)} Q
             </Text>
           </View>
 
@@ -177,6 +187,16 @@ const SubcategoryDetailScreen = () => {
             </View>
           )}
         </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Category: {quiz.category?.name || 'N/A'}</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Subcategory: {quiz.subcategory?.name || subcategory?.name || 'N/A'}</Text>
+        </View>
+
+        <View style={{ marginTop: 10 }}>
+          <TouchableOpacity onPress={() => setStartModalQuiz(quiz)} style={{ backgroundColor: colors.primary, paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}>
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Start Quiz</Text>
+          </TouchableOpacity>
+        </View>
       </Card>
     </TouchableOpacity>
   );
@@ -193,13 +213,13 @@ const SubcategoryDetailScreen = () => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}> 
       <TopBar
         title="Subcategory Detail"
         showMenuButton={false}
         onBackPress={() => navigation.goBack()}
       />
-
+ 
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -208,35 +228,45 @@ const SubcategoryDetailScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         {subcategory && (
-          <View style={[styles.headerSection, { backgroundColor: colors.surface }]}>
+          <View style={[styles.headerSection, { backgroundColor: colors.surface }]}> 
             <Text style={[styles.subcategoryName, { color: colors.text }]}>
               {subcategory.name}
             </Text>
             {subcategory.description && (
-              <Text style={[styles.subcategoryDescription, { color: colors.textSecondary }]}>
+              <Text style={[styles.subcategoryDescription, { color: colors.textSecondary }]}> 
                 {subcategory.description}
               </Text>
             )}
           </View>
         )}
-
+ 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}> 
             Available Quizzes ({quizzes.length})
           </Text>
-
+ 
           {quizzes.length > 0 ? (
             quizzes.map(renderQuizCard)
           ) : (
             <View style={styles.emptyState}>
               <Icon name="quiz" size={48} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}> 
                 No quizzes available for this subcategory
               </Text>
             </View>
           )}
         </View>
       </ScrollView>
+      <QuizStartModal
+        visible={!!startModalQuiz}
+        quiz={startModalQuiz}
+        onClose={() => setStartModalQuiz(null)}
+        onConfirm={() => {
+          const q = startModalQuiz;
+          setStartModalQuiz(null);
+          handleQuizPress(q);
+        }}
+      />
     </View>
   );
 };

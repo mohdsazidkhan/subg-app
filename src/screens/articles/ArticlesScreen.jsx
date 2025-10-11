@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,12 @@ import {
   RefreshControl,
   Image,
   Dimensions,
+  TextInput,
+  Switch,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -24,10 +26,10 @@ const { width } = Dimensions.get('window');
 
 const ArticlesScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage } = useLanguage();
-
   const [articles, setArticles] = useState([]);
   const [categories, setCategories] = useState([]);
   const [featuredArticles, setFeaturedArticles] = useState([]);
@@ -36,9 +38,19 @@ const ArticlesScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [filters, setFilters] = useState({ search: '', featured: false, tag: '' });
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   useEffect(() => {
+    // apply incoming filters from navigation (e.g., tag/category)
+    if (route?.params?.filter === 'tag' && route?.params?.value) {
+      setFilters(prev => ({ ...prev, tag: String(route.params.value) }));
+    }
+    if (route?.params?.filter === 'category' && route?.params?.value) {
+      setSelectedCategory(String(route.params.value));
+    }
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {
@@ -66,25 +78,60 @@ const ArticlesScreen = () => {
       if (selectedCategory !== 'all') {
         params.category = selectedCategory;
       }
+      if (filters.search) params.search = filters.search;
+      if (filters.featured) params.featured = true;
+      if (filters.tag) params.tag = filters.tag;
 
       const response = await API.getPublishedArticles(params);
-      if (response.success) {
-        setArticles(response.data || []);
-        setHasMore(response.data?.length === 20);
+      if (response?.success) {
+        // Backend returns { success, data: { articles, pagination } }
+        const list = response.data?.articles || response.articles || [];
+        setArticles(Array.isArray(list) ? list : []);
+        const pagination = response.data?.pagination;
+        if (pagination) {
+          setHasMore(Boolean(pagination.hasNext));
+        } else {
+          setHasMore(list.length === 20);
+        }
+      } else {
+        setArticles([]);
+        setHasMore(false);
       }
     } catch (error) {
       console.error('Error fetching articles:', error);
+      setArticles([]);
+      setHasMore(false);
     }
   };
 
+  // Debounce search input
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setPage(1);
+      fetchArticles();
+    }, 400);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.search]);
+
+  // Re-fetch when basic filters/page change
+  useEffect(() => {
+    fetchArticles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, selectedCategory, filters.featured, filters.tag]);
+
   const fetchCategories = async () => {
     try {
-      const response = await API.getArticleCategories();
-      if (response.success) {
-        setCategories(response.data || []);
+      // Backend doesn't have /api/public/articles/categories. Use public categories like web.
+      const response = await API.getPublicCategories();
+      if (response?.success) {
+        setCategories(response.data || response.categories || []);
+      } else {
+        setCategories([]);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
+      setCategories([]);
     }
   };
 
@@ -109,6 +156,39 @@ const ArticlesScreen = () => {
     setSelectedCategory(categoryId);
     setPage(1);
     fetchArticles();
+  };
+
+
+  const handleLoadMore = async () => {
+    if (!hasMore || isLoadingMore) return;
+    try {
+      setIsLoadingMore(true);
+      const nextPage = page + 1;
+      const params = { page: nextPage, limit: 20 };
+      if (selectedCategory !== 'all') params.category = selectedCategory;
+      if (filters.search) params.search = filters.search;
+      if (filters.featured) params.featured = true;
+      if (filters.tag) params.tag = filters.tag;
+
+      const response = await API.getPublishedArticles(params);
+      const list = response?.data?.articles || response?.articles || [];
+      if (Array.isArray(list) && list.length > 0) {
+        setArticles(prev => [...prev, ...list]);
+        const pagination = response?.data?.pagination;
+        if (pagination) {
+          setHasMore(Boolean(pagination.hasNext));
+        } else {
+          setHasMore(list.length === 20);
+        }
+        setPage(nextPage);
+      } else {
+        setHasMore(false);
+      }
+    } catch (e) {
+      console.error('Error loading more articles:', e);
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   const handleLike = async (articleId) => {
@@ -146,7 +226,7 @@ const ArticlesScreen = () => {
     <TouchableOpacity
       key={article._id}
       style={[styles.articleCard, { backgroundColor: colors.surface }]}
-      onPress={() => navigation.navigate('ArticleDetail', { articleId: article._id })}
+      onPress={() => navigation.navigate('ArticleDetail', { articleId: article.slug || article._id })}
     >
       {article.featuredImage && (
         <Image
@@ -234,7 +314,7 @@ const ArticlesScreen = () => {
     <TouchableOpacity
       key={article._id}
       style={[styles.featuredCard, { backgroundColor: colors.surface }]}
-      onPress={() => navigation.navigate('ArticleDetail', { articleId: article._id })}
+      onPress={() => navigation.navigate('ArticleDetail', { articleId: article.slug || article._id })}
     >
       <LinearGradient
         colors={[colors.primary + '20', colors.secondary + '20']}
@@ -295,6 +375,23 @@ const ArticlesScreen = () => {
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Search & Filters */}
+        <View style={styles.section}>
+          <View style={[styles.filterBar, { backgroundColor: colors.surface }]}> 
+            <View style={[styles.searchBox, { backgroundColor: colors.background }]}> 
+              <Icon name="search" size={18} color={colors.textSecondary} />
+              <TextInput
+                style={[styles.searchInput, { color: colors.text }]}
+                placeholder="Search articles"
+                placeholderTextColor={colors.textSecondary}
+                value={filters.search}
+                onChangeText={(text) => setFilters(prev => ({ ...prev, search: text }))}
+                returnKeyType="search"
+              />
+            </View>
+          </View>
+        </View>
+
         {/* Featured Articles */}
         {featuredArticles.length > 0 && (
           <View style={styles.section}>
@@ -309,15 +406,12 @@ const ArticlesScreen = () => {
 
         {/* Categories */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            📚 Categories
-          </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <TouchableOpacity
               style={[
                 styles.categoryChip,
                 { backgroundColor: selectedCategory === 'all' ? colors.primary : colors.surface },
-                { borderColor: colors.primary }
+                { borderColor: colors.primary, marginLeft: 20 }
               ]}
               onPress={() => handleCategoryChange('all')}
             >
@@ -330,7 +424,7 @@ const ArticlesScreen = () => {
                 All
               </Text>
             </TouchableOpacity>
-
+                
             {categories.map(category => (
               <TouchableOpacity
                 key={category._id}
@@ -347,7 +441,7 @@ const ArticlesScreen = () => {
                     { color: selectedCategory === category._id ? 'white' : colors.primary }
                   ]}
                 >
-                  {category.name} ({category.articleCount})
+                  {category.name}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -359,7 +453,22 @@ const ArticlesScreen = () => {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             📖 All Articles
           </Text>
-          {articles.map(renderArticleCard)}
+          {Array.isArray(articles) && articles.map(renderArticleCard)}
+          {Array.isArray(articles) && articles.length === 0 && (
+            <View style={styles.emptyState}>
+              <Icon name="article" size={36} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No articles found</Text>
+            </View>
+          )}
+          {hasMore && (
+            <TouchableOpacity
+              onPress={handleLoadMore}
+              disabled={isLoadingMore}
+              style={[styles.loadMoreBtn, { backgroundColor: colors.primary }]}
+            >
+              <Text style={styles.loadMoreText}>{isLoadingMore ? 'Loading...' : 'Load More'}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -389,6 +498,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginHorizontal: 20,
     marginBottom: 12,
+  },
+  filterBar: {
+    marginTop: 20,
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
   },
   featuredCard: {
     width: width * 0.8,
@@ -529,6 +661,26 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  emptyText: {
+    fontSize: 14,
+    marginTop: 8,
+  },
+  loadMoreBtn: {
+    alignSelf: 'center',
+    marginTop: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  loadMoreText: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });
 

@@ -8,11 +8,11 @@
  * @version 1.0.0
  */
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-
+import { useNavigation } from '@react-navigation/native';
 // Screens
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -37,6 +37,7 @@ import ArticleDetailScreen from '../screens/articles/ArticleDetailScreen';
 import PublicQuestionsScreen from '../screens/questions/PublicQuestionsScreen';
 import PostQuestionScreen from '../screens/pro/PostQuestionScreen';
 import MyQuestionsScreen from '../screens/pro/MyQuestionsScreen';
+import CreateUserQuizScreen from '../screens/pro/CreateUserQuizScreen';
 import LandingScreen from '../screens/marketing/LandingScreen';
 import HowItWorksScreen from '../screens/marketing/HowItWorksScreen';
 import ContactUsScreen from '../screens/marketing/ContactUsScreen';
@@ -53,9 +54,18 @@ import UserSearchScreen from '../screens/profile/UserSearchScreen';
 // Components
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import BottomSheetCreate from '../components/ui/BottomSheetCreate';
+import TopBar from '../components/TopBar';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+const HomeStack = createStackNavigator();
+const QuestionsStack = createStackNavigator();
+const PostStack = createStackNavigator();
+const SearchStack = createStackNavigator();
+const ProfileStack = createStackNavigator();
+const MoreStack = createStackNavigator();
+const PlansStack = createStackNavigator();
 
 /**
  * Get tab bar icon for route
@@ -73,6 +83,9 @@ function getTabBarIcon(routeName, color, size) {
     case 'PublicQuestions':
       iconName = 'quiz';
       break;
+    case 'Plans':
+      iconName = 'workspace-premium';
+      break;
     case 'PostQuestion':
       iconName = 'add-circle';
       break;
@@ -89,6 +102,82 @@ function getTabBarIcon(routeName, color, size) {
       iconName = 'help';
   }
   return <Icon name={iconName} size={size} color={color} />;
+}
+
+// Home stack to keep bottom tabs visible on inner pages opened from Home
+function HomeStackNavigator() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="HomeRoot" component={HomeScreen} />
+      <HomeStack.Screen name="LevelDetail" component={LevelDetailScreen} />
+      <HomeStack.Screen name="CategoryDetail" component={CategoryDetailScreen} />
+      <HomeStack.Screen name="SubcategoryDetail" component={SubcategoryDetailScreen} />
+      <HomeStack.Screen name="Articles" component={ArticlesScreen} />
+      <HomeStack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
+    </HomeStack.Navigator>
+  );
+}
+
+function QuestionsStackNavigator() {
+  return (
+    <QuestionsStack.Navigator screenOptions={{ headerShown: false }}>
+      <QuestionsStack.Screen name="QuestionsRoot" component={PublicQuestionsScreen} />
+    </QuestionsStack.Navigator>
+  );
+}
+
+function PostStackNavigator() {
+  return (
+    <PostStack.Navigator screenOptions={{ headerShown: false }}>
+      <PostStack.Screen name="PostRoot" component={PostQuestionScreen} />
+      <PostStack.Screen name="MyQuestions" component={MyQuestionsScreen} />
+      <PostStack.Screen name="CreateUserQuiz" component={CreateUserQuizScreen} />
+    </PostStack.Navigator>
+  );
+}
+
+function SearchStackNavigator() {
+  return (
+    <SearchStack.Navigator screenOptions={{ headerShown: false }}>
+      <SearchStack.Screen name="SearchRoot" component={SearchScreen} />
+    </SearchStack.Navigator>
+  );
+}
+
+function ProfileStackNavigator() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="ProfileRoot" component={ProfileScreen} />
+      <ProfileStack.Screen name="PublicProfile" component={PublicProfileScreen} />
+      <ProfileStack.Screen name="FollowersList" component={FollowersListScreen} />
+      <ProfileStack.Screen name="FollowingList" component={FollowingListScreen} />
+      <ProfileStack.Screen name="UserSearch" component={UserSearchScreen} />
+    </ProfileStack.Navigator>
+  );
+}
+
+function MoreStackNavigator() {
+  return (
+    <MoreStack.Navigator screenOptions={{ headerShown: false }}>
+      <MoreStack.Screen name="MoreRoot" component={MoreScreen} />
+      <MoreStack.Screen name="Subscription" component={SubscriptionScreen} />
+      <MoreStack.Screen name="HowItWorks" component={HowItWorksScreen} />
+      <MoreStack.Screen name="AboutUs" component={AboutUsScreen} />
+      <MoreStack.Screen name="ContactUs" component={ContactUsScreen} />
+      <MoreStack.Screen name="Terms" component={TermsScreen} />
+      <MoreStack.Screen name="Privacy" component={PrivacyScreen} />
+      <MoreStack.Screen name="Refund" component={RefundScreen} />
+    </MoreStack.Navigator>
+  );
+}
+
+function PlansStackNavigator() {
+  return (
+    <PlansStack.Navigator screenOptions={{ headerShown: false }}>
+      {/* Directly show subscription plans page */}
+      <PlansStack.Screen name="PlansRoot" component={SubscriptionScreen} />
+    </PlansStack.Navigator>
+  );
 }
 
 /**
@@ -119,8 +208,14 @@ function AuthStack() {
  */
 function MainTabs() {
   const { colors } = useTheme();
+  const [showCreate, setShowCreate] = useState(false);
+  const openCreate = useCallback(() => setShowCreate(true), []);
+  const closeCreate = useCallback(() => setShowCreate(false), []);
+  const navigation = useNavigation();
+  const StackNav = Stack; // access for navigate via screen props in callbacks if needed
   
   return (
+    <>
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ color, size }) => getTabBarIcon(route.name, color, size),
@@ -142,35 +237,61 @@ function MainTabs() {
     >
       <Tab.Screen 
         name="Home" 
-        component={HomeScreen} 
+        component={HomeStackNavigator} 
         options={{ tabBarLabel: 'Home' }} 
       />
       <Tab.Screen 
         name="PublicQuestions" 
-        component={PublicQuestionsScreen} 
+        component={QuestionsStackNavigator} 
         options={{ tabBarLabel: 'Questions' }} 
       />
       <Tab.Screen 
+        name="Plans" 
+        component={PlansStackNavigator} 
+        options={{ tabBarLabel: 'Plans' }} 
+      />
+      <Tab.Screen 
         name="PostQuestion" 
-        component={PostQuestionScreen} 
-        options={{ tabBarLabel: 'Post Question' }} 
+        component={PostStackNavigator} 
+        options={{ tabBarLabel: 'Post' }}
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            openCreate();
+          },
+        }} 
       />
       <Tab.Screen 
         name="Search" 
-        component={SearchScreen} 
+        component={SearchStackNavigator} 
         options={{ tabBarLabel: 'Search' }} 
       />
       <Tab.Screen 
         name="Profile" 
-        component={ProfileScreen} 
+        component={ProfileStackNavigator} 
         options={{ tabBarLabel: 'Profile' }} 
       />
       <Tab.Screen 
         name="More" 
-        component={MoreScreen} 
+        component={MoreStackNavigator} 
         options={{ tabBarLabel: 'More' }} 
       />
     </Tab.Navigator>
+    <BottomSheetCreate
+      visible={showCreate}
+      onClose={closeCreate}
+      onCreateQuiz={() => {
+        closeCreate();
+        // Navigate to nested screen inside Post tab
+        navigation.navigate('PostQuestion', { screen: 'CreateUserQuiz' });
+      }}
+      onPostQuestion={() => {
+        closeCreate();
+        // Open Post tab root (which hosts PostQuestionScreen)
+        navigation.navigate('PostQuestion', { screen: 'PostRoot' });
+      }}
+    />
+    </>
   );
 }
 
@@ -181,9 +302,10 @@ function MainTabs() {
  */
 function AppNavigator() {
   const { isAuthenticated } = useAuth();
+  const { Navigator, Screen } = Stack;
   
   return (
-    <Stack.Navigator
+    <Navigator
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: 'transparent' },
@@ -191,58 +313,40 @@ function AppNavigator() {
     >
       {!isAuthenticated ? (
         <>
-          <Stack.Screen name="Landing" component={LandingScreen} />
-          <Stack.Screen name="Auth" component={AuthStack} />
+          <Screen name="Landing" component={LandingScreen} />
+          <Screen name="Auth" component={AuthStack} />
         </>
       ) : (
-        <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Screen name="MainTabs" component={MainTabs} />
       )}
       
-      <Stack.Screen 
+      <Screen 
         name="Quiz" 
         component={QuizScreen} 
         options={{ presentation: 'modal' }} 
       />
-      <Stack.Screen 
+      <Screen 
         name="AttemptQuiz" 
         component={AttemptQuizScreen} 
         options={{ presentation: 'modal' }} 
       />
-      <Stack.Screen 
+      <Screen 
         name="QuizResult" 
         component={QuizResultScreen} 
         options={{ presentation: 'modal' }} 
       />
-      <Stack.Screen 
+      <Screen 
         name="PayUSuccess" 
         component={PayUSuccessScreen} 
         options={{ presentation: 'modal' }} 
       />
-      <Stack.Screen 
+      <Screen 
         name="PayUFailure" 
         component={PayUFailureScreen} 
         options={{ presentation: 'modal' }} 
       />
-      <Stack.Screen name="LevelDetail" component={LevelDetailScreen} />
-      <Stack.Screen name="CategoryDetail" component={CategoryDetailScreen} />
-      <Stack.Screen name="SubcategoryDetail" component={SubcategoryDetailScreen} />
-      <Stack.Screen name="Articles" component={ArticlesScreen} />
-      <Stack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
-      <Stack.Screen name="PublicQuestions" component={PublicQuestionsScreen} />
-      <Stack.Screen name="PostQuestion" component={PostQuestionScreen} />
-      <Stack.Screen name="MyQuestions" component={MyQuestionsScreen} />
-      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
-      <Stack.Screen name="HowItWorks" component={HowItWorksScreen} />
-      <Stack.Screen name="AboutUs" component={AboutUsScreen} />
-      <Stack.Screen name="ContactUs" component={ContactUsScreen} />
-      <Stack.Screen name="Terms" component={TermsScreen} />
-      <Stack.Screen name="Privacy" component={PrivacyScreen} />
-      <Stack.Screen name="Refund" component={RefundScreen} />
-      <Stack.Screen name="PublicProfile" component={PublicProfileScreen} />
-      <Stack.Screen name="FollowersList" component={FollowersListScreen} />
-      <Stack.Screen name="FollowingList" component={FollowingListScreen} />
-      <Stack.Screen name="UserSearch" component={UserSearchScreen} />
-    </Stack.Navigator>
+      {/** Detail routes now live inside tab stacks so bottom bar stays visible */}
+    </Navigator>
   );
 }
 

@@ -41,22 +41,51 @@ const AttemptQuizScreen = () => {
 
   useEffect(() => {
     if (!quiz) {
-      navigation.goBack();
-      return;
+      const passedId = route.params?.quizId;
+      if (passedId) {
+        setQuiz({ _id: passedId });
+      } else {
+        navigation.goBack();
+        return;
+      }
     }
     fetchQuizQuestions();
   }, []);
 
   useEffect(() => {
-    // Handle back button press
+    // Hard-block leaving: hardware back submits automatically after confirmation
     const backAction = () => {
-      handleExitQuiz();
+      Alert.alert(
+        'Exit Quiz?',
+        'If you exit now, your quiz will be auto-submitted.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Submit & Exit', style: 'destructive', onPress: () => handleSubmitQuiz() },
+        ]
+      );
       return true; // Prevent default back behavior
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
-    return () => backHandler.remove();
-  }, []);
+
+    // Block navigation gestures and top bar actions
+    const removeBeforeRemove = navigation.addListener('beforeRemove', (e) => {
+      e.preventDefault();
+      Alert.alert(
+        'Exit Quiz?',
+        'If you exit now, your quiz will be auto-submitted.',
+        [
+          { text: 'Stay', style: 'cancel' },
+          { text: 'Submit & Exit', style: 'destructive', onPress: () => handleSubmitQuiz() },
+        ]
+      );
+    });
+
+    return () => {
+      backHandler.remove();
+      removeBeforeRemove();
+    };
+  }, [navigation, quiz, answers, timeRemaining]);
 
   useEffect(() => {
     // Timer effect
@@ -80,12 +109,17 @@ const AttemptQuizScreen = () => {
       setLoading(true);
       const response = await API.getQuizQuestions(quiz._id);
       
-      if (response.success) {
-        setQuestions(response.results || []);
+      if (response?.success) {
+        const list = response.results || response.data || response.questions || [];
+        setQuestions(list);
         // Set timer if quiz has time limit
-        if (quiz.timeLimit && quiz.timeLimit > 0) {
-          setTimeRemaining(quiz.timeLimit * 60); // Convert minutes to seconds
-        }
+        if (quiz.timeLimit && quiz.timeLimit > 0) setTimeRemaining(quiz.timeLimit * 60);
+      } else {
+        // As a fallback, try fetching full quiz then use its questions
+        const q = await API.getQuizById(quiz._id);
+        const list = q?.data?.questions || q?.questions || [];
+        setQuestions(list);
+        if (!quiz.timeLimit && (q?.data?.timeLimit || q?.timeLimit)) setTimeRemaining((q.data?.timeLimit || q.timeLimit) * 60);
       }
     } catch (error) {
       console.error('Error fetching quiz questions:', error);
@@ -138,11 +172,11 @@ const AttemptQuizScreen = () => {
 
   const handleExitQuiz = () => {
     Alert.alert(
-      'Exit Quiz',
-      'Are you sure you want to exit? Your progress will be lost.',
+      'Exit Quiz?',
+      'If you exit now, your quiz will be auto-submitted.',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Exit', style: 'destructive', onPress: () => navigation.goBack() },
+        { text: 'Stay', style: 'cancel' },
+        { text: 'Submit & Exit', style: 'destructive', onPress: () => handleSubmitQuiz() },
       ]
     );
   };
@@ -151,11 +185,11 @@ const AttemptQuizScreen = () => {
     try {
       setSubmitting(true);
       
-      const result = await API.submitQuiz({
-        quizId: quiz._id,
-        answers: answers,
-        timeTaken: quiz.timeLimit ? (quiz.timeLimit * 60 - timeRemaining) : 300, // 5 minutes default
-      });
+      const payload = {
+        answers,
+        timeTaken: quiz.timeLimit ? (quiz.timeLimit * 60 - timeRemaining) : undefined,
+      };
+      const result = await API.submitQuiz(quiz._id, payload);
 
       if (result.success) {
         setQuizCompleted(true);
@@ -241,7 +275,8 @@ const AttemptQuizScreen = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
         title={quiz.name}
-        showBackButton={false}
+        showBackButton={true}
+        onBackPress={handleExitQuiz}
         showLanguageToggle={true}
         onLanguageToggle={handleLanguageToggle}
         rightComponent={

@@ -18,6 +18,7 @@ import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { showMessage } from 'react-native-flash-message';
+import QuizStartModal from '../../components/QuizStartModal';
 
 const LevelDetailScreen = () => {
   const navigation = useNavigation();
@@ -31,13 +32,15 @@ const LevelDetailScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Web uses a numeric level param; support both id and level number
   const levelId = route.params?.levelId;
+  const levelNumber = route.params?.levelNumber;
 
   useEffect(() => {
-    if (levelId) {
+    if (levelId || typeof levelNumber === 'number' || typeof levelNumber === 'string') {
       fetchLevelData();
     }
-  }, [levelId]);
+  }, [levelId, levelNumber]);
 
   const fetchLevelData = async () => {
     try {
@@ -61,10 +64,10 @@ const LevelDetailScreen = () => {
     try {
       const response = await API.getAllLevels();
       if (response.success) {
-        const foundLevel = response.data.find((l) => l._id === levelId);
-        if (foundLevel) {
-          setLevel(foundLevel);
-        }
+        const foundById = response.data.find((l) => l._id === levelId);
+        const foundByNumber = response.data.find((l) => String(l.level) === String(levelNumber));
+        const chosen = foundById || foundByNumber || null;
+        if (chosen) setLevel(chosen);
       }
     } catch (error) {
       console.error('Error fetching level:', error);
@@ -73,9 +76,13 @@ const LevelDetailScreen = () => {
 
   const fetchQuizzes = async () => {
     try {
-      const response = await API.getLevelBasedQuizzes({ levelId });
-      if (response.success) {
+      // Match web: query by numeric level when available, else by levelId
+      const params = levelNumber != null ? { level: String(levelNumber), page: 1, limit: 10 } : { levelId };
+      const response = await API.getLevelBasedQuizzes(params);
+      if (response?.success) {
         setQuizzes(response.data || []);
+      } else if (Array.isArray(response)) {
+        setQuizzes(response);
       }
     } catch (error) {
       console.error('Error fetching quizzes:', error);
@@ -121,6 +128,16 @@ const LevelDetailScreen = () => {
     ];
     return icons[levelNumber - 1] || 'star';
   };
+
+  const getQuestionsCount = (quiz) => {
+    if (typeof quiz.questionCount === 'number') return quiz.questionCount;
+    if (typeof quiz.questionsCount === 'number') return quiz.questionsCount;
+    if (typeof quiz.totalMarks === 'number') return quiz.totalMarks;
+    if (Array.isArray(quiz.questions)) return quiz.questions.length;
+    return 0;
+  };
+
+  const [startModalQuiz, setStartModalQuiz] = React.useState(null);
 
   const renderQuizCard = (quiz) => (
     <Card key={quiz._id} style={styles.quizCard}>
@@ -173,7 +190,7 @@ const LevelDetailScreen = () => {
         <View style={styles.quizInfoItem}>
           <Icon name="quiz" size={16} color={colors.textSecondary} />
           <Text style={[styles.quizInfoText, { color: colors.textSecondary }]}>
-            {quiz.totalMarks} Q
+            {getQuestionsCount(quiz)} Q
           </Text>
         </View>
 
@@ -187,9 +204,18 @@ const LevelDetailScreen = () => {
         )}
       </View>
 
+      {/* Always show Category, Subcategory, and Level */}
+      <View style={[styles.metaRow]}>
+        <Text style={[styles.metaText, { color: colors.textSecondary }]}>Category: {quiz.category?.name || 'N/A'}</Text>
+        <Text style={[styles.metaText, { color: colors.textSecondary }]}>Subcategory: {quiz.subcategory?.name || 'N/A'}</Text>
+      </View>
+      <View style={[styles.metaRow]}>
+        <Text style={[styles.metaText, { color: colors.textSecondary }]}>Level: {level?.level} {level?.name ? `- ${level.name}` : ''}</Text>
+      </View>
+
       <Button
         title={quiz.isCompleted ? 'Retake' : 'Start Quiz'}
-        onPress={() => navigation.navigate('Quiz', { quizId: quiz._id })}
+        onPress={() => setStartModalQuiz(quiz)}
         variant={quiz.isCompleted ? 'outline' : 'primary'}
         style={styles.quizButton}
       />
@@ -294,6 +320,16 @@ const LevelDetailScreen = () => {
           )}
         </View>
       </ScrollView>
+      <QuizStartModal
+        visible={!!startModalQuiz}
+        quiz={startModalQuiz}
+        onClose={() => setStartModalQuiz(null)}
+        onConfirm={() => {
+          const q = startModalQuiz;
+          setStartModalQuiz(null);
+          navigation.navigate('AttemptQuiz', { quiz: { _id: q._id, name: q.title || q.name, timeLimit: q.timeLimit, questionsCount: getQuestionsCount(q), difficulty: q.difficulty } });
+        }}
+      />
     </View>
   );
 };
@@ -410,6 +446,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     gap: 16,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  metaText: {
+    fontSize: 12,
   },
   quizInfoItem: {
     flexDirection: 'row',

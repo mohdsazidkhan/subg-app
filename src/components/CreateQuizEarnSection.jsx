@@ -74,16 +74,6 @@ const CreateQuizEarnSection = ({ onCreatePress, onMyQuizzesPress }) => {
 
   return (
     <View style={styles.container}>
-      {/* Section Header */}
-      <View style={styles.headerContainer}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Create Custom Quizzes & Earn Subscription Rewards 🎓
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          Pro users can create their own quizzes and earn next subscription free extensions at milestones!
-        </Text>
-      </View>
-
       {/* Main Content Card */}
       <LinearGradient
         colors={[colors.cardBackground, colors.cardBackground + 'CC']}
@@ -100,7 +90,7 @@ const CreateQuizEarnSection = ({ onCreatePress, onMyQuizzesPress }) => {
             </LinearGradient>
           </View>
           <Text style={[styles.earnTitle, { color: colors.text }]}>
-            Earn FREE Subscriptions
+            Create Custom Quizzes & Earn Subscription Rewards
           </Text>
           <Text style={[styles.earnDescription, { color: colors.textSecondary }]}>
             Create quality quizzes with 5-10 questions each and unlock subscription rewards at major milestones.
@@ -260,7 +250,7 @@ const styles = StyleSheet.create({
     fontSize: 35,
   },
   earnTitle: {
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 12,
     textAlign: 'center',

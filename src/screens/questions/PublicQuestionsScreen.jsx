@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   RefreshControl,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types/navigation';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +23,6 @@ import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
 // Ensure there are no named or duplicate imports for Card or TopBar
 
-
 const PublicQuestionsScreen = () => {
   const navigation = useNavigation();
   const { colors, isDark, toggleTheme } = useTheme();
@@ -32,27 +32,29 @@ const PublicQuestionsScreen = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [query, setQuery] = useState(''); // committed search like web
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
-
-  useEffect(() => {
-    loadQuestions();
-  }, [page, searchTerm]);
-
-  const loadQuestions = useCallback(async () => {
+  
+  // Load questions function
+  const loadQuestions = async() => {
+    if (loading) return; // Prevent multiple simultaneous loads
+    
     setLoading(true);
     try {
-      const params = { page, limit: 20 };
-      if (searchTerm.trim()) {
-        params.search = searchTerm.trim();
-      }
-
+      // If no search query, fetch all default questions. If search query exists, fetch filtered questions
+      const params = { 
+        page, 
+        limit: 20, 
+        search: query.trim() || "" 
+      };
       const response = await API.getPublicUserQuestions(params);
-
+      
       if (response?.success) {
-        const newQuestions = response.data || [];
+        let newQuestions = response.data || [];
 
+        // Reset questions list on page 1, append on subsequent pages
         if (page === 1) {
           setQuestions(newQuestions);
         } else {
@@ -71,7 +73,18 @@ const PublicQuestionsScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, searchTerm]);
+  }
+
+  // Load default questions on mount and when page or search query changes
+  useEffect(() => {
+    loadQuestions();
+  }, [page, query]);
+
+  // Reload questions when screen comes into focus (useful for tab navigation)
+  useEffect(() => {
+    loadQuestions();
+  }, [])
+  
 
   const handleLanguageToggle = async () => {
     const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
@@ -87,6 +100,18 @@ const PublicQuestionsScreen = () => {
 
   const handleSearch = (text) => {
     setSearchTerm(text);
+  };
+
+  const submitSearch = () => {
+    // Reset to page 1 and set the search query
+    setPage(1);
+    setQuery(searchTerm.trim());
+  };
+
+  const clearSearch = () => {
+    // Clear search and reset to default questions
+    setSearchTerm('');
+    setQuery('');
     setPage(1);
   };
 
@@ -150,66 +175,56 @@ const PublicQuestionsScreen = () => {
         message: 'Question shared successfully!',
         type: 'success',
       });
+      setQuestions(prev => prev.map(q => q._id === question._id ? { ...q, sharesCount: (q.sharesCount || 0) + 1 } : q));
     } catch (error) {
       console.error('Failed to share question:', error);
     }
   };
 
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty?.toLowerCase()) {
-      case 'easy':
-        return colors.success;
-      case 'medium':
-        return colors.warning;
-      case 'hard':
-        return colors.error;
-      default:
-        return colors.textSecondary;
-    }
-  };
+  console.log(questions, 'questions')
+  const renderQuestion = (question, index) => (
+    <Card key={question._id} style={[styles.questionCard, { backgroundColor: colors.surface }]}> 
 
-  const renderQuestion = (question) => (
-    <Card key={question._id} style={[styles.questionCard, { backgroundColor: colors.surface }]}>
-      <View style={styles.questionHeader}>
-        <View style={styles.questionMeta}>
-          <Text style={[styles.questionCategory, { color: colors.primary }]}>
-            {question.category?.name || ''}
-          </Text>
-          <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(question.difficulty) + '20' }]}>
-            <Text style={[styles.difficultyText, { color: getDifficultyColor(question.difficulty) }]}>
-              {question.difficulty}
+      {/* Username / author handle */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+        <TouchableOpacity
+          onPress={() => {
+            const username = question.userId?.username || question.author?.username || question.user?.username;
+            if (username) {
+              navigation.navigate('PublicProfile', { username });
+            }
+          }}
+          style={{ flexDirection: 'row', justifyContent: 'space-start', alignItems: 'center'}}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.userAvator]}>
+            <Text style={{ color: "white", fontWeight: '600' }}>
+              {question.userId?.name?.charAt(0) || 'U'}
             </Text>
           </View>
-        </View>
-
-        <View style={styles.questionStats}>
-          <View style={styles.statItem}>
-            <Icon name="visibility" size={14} color={colors.textSecondary} />
-            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.viewsCount}</Text>
+          <View style={styles.userInfo}>
+            <Text style={{ color: colors.primary, fontWeight: '600' }}>
+              @{question.userId?.username || question.author?.username || question.user?.username || 'user'}
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+              {question.userId?.level?.levelName ? `Level ${question.userId.level.levelName}` : ''}
+            </Text>
           </View>
-          <View style={styles.statItem}>
-            <Icon name="reply" size={14} color={colors.textSecondary} />
-            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.answersCount || 0}</Text>
-          </View>
-          <TouchableOpacity style={styles.statItem} onPress={() => handleLike(question)}>
-            <Icon
-              name={question.isLiked ? "favorite" : "favorite-border"}
-              size={14}
-              color={question.isLiked ? colors.error : colors.textSecondary}
-            />
-            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.likesCount}</Text>
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
+        
+        <Text style={[styles.dateText, { color: colors.textSecondary }]}>
+          {new Date(question.createdAt).toLocaleDateString()}
+        </Text>
       </View>
 
-      <Text style={[styles.questionText, { color: colors.text }]}>
-        {question.question}
+      <Text style={[styles.questionText, { color: colors.text }]}> 
+        <Text style={{ color: colors.warning, fontWeight: 'bold' }}>#{(index + 1)}</Text> {question.questionText || question.question}
       </Text>
 
       <View style={styles.optionsContainer}>
-        {question.options.map((option, index) => {
-          const isSelected = question.selectedOptionIndex === index;
-          const isCorrect = index === question.correctAnswer;
+        {question.options.map((option, optIndex) => {
+          const isSelected = question.selectedOptionIndex === optIndex;
+          const isCorrect = optIndex === question.correctAnswer;
           const isWrong = isSelected && !isCorrect;
           const showFeedback = question.isAnswered && isSelected;
           const showCorrectAnswer = question.isAnswered && !isSelected && isCorrect;
@@ -240,7 +255,7 @@ const PublicQuestionsScreen = () => {
 
           return (
             <TouchableOpacity
-              key={index}
+              key={optIndex}
               style={[
                 styles.optionButton,
                 {
@@ -249,7 +264,7 @@ const PublicQuestionsScreen = () => {
                   borderWidth,
                 },
               ]}
-              onPress={() => handleAnswer(question, index)}
+              onPress={() => handleAnswer(question, optIndex)}
               disabled={question.isAnswered}
             >
               <View
@@ -258,7 +273,7 @@ const PublicQuestionsScreen = () => {
                   {
                     backgroundColor: (showFeedback || showCorrectAnswer)
                       ? (isCorrect ? '#4CAF50' : '#F44336')
-                      : (isSelected ? colors.primary : colors.border)
+                    : (isSelected ? colors.primary : colors.border)
                   },
                 ]}
               >
@@ -281,43 +296,39 @@ const PublicQuestionsScreen = () => {
                     : (isSelected ? colors.primary : colors.text)
                 },
               ]}>
-                {String.fromCharCode(65 + index)}. {option}
+                {String.fromCharCode(65 + optIndex)}. {option}
               </Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {question.isAnswered && question.explanation && (
-        <View style={[styles.explanationContainer, { backgroundColor: colors.primary + '10' }]}>
-          <Text style={[styles.explanationTitle, { color: colors.primary }]}>Explanation</Text>
-          <Text style={[styles.explanationText, { color: colors.text }]}>
-            {question.explanation}
-          </Text>
-        </View>
-      )}
-
       <View style={styles.questionFooter}>
-        <View style={styles.authorInfo}>
-          <Icon name="person" size={14} color={colors.textSecondary} />
-          <Text style={[styles.authorText, { color: colors.textSecondary }]}>
-            {question.author?.name || 'Anonymous'}
-          </Text>
-        </View>
-        <Text style={[styles.dateText, { color: colors.textSecondary }]}>
-          {new Date(question.createdAt).toLocaleDateString()}
-        </Text>
-      </View>
-
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
+      
+          <View style={[styles.actionButton,{backgroundColor: colors.background}]}>
+            <Icon name="visibility" size={14} color={colors.textSecondary} />
+            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.viewsCount}</Text>
+          </View>
+          <View style={[styles.actionButton,{backgroundColor: colors.background}]}>
+            <Icon name="reply" size={14} color={colors.textSecondary} />
+            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.answersCount || 0}</Text>
+          </View>
+          <TouchableOpacity style={[styles.actionButton,{backgroundColor: colors.background,}]} onPress={() => handleLike(question)}>
+            <Icon
+              name={question.isLiked ? "favorite" : "favorite-border"}
+              size={14}
+              color={question.isLiked ? colors.error : colors.textSecondary}
+            />
+            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.likesCount}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: colors.background }]}
           onPress={() => handleShare(question)}
         >
           <Icon name="share" size={16} color={colors.textSecondary} />
-          <Text style={[styles.actionText, { color: colors.textSecondary }]}>Share</Text>
+          <Text style={[styles.actionText, { color: colors.textSecondary }]}>Share {question.sharesCount || 0}</Text>
         </TouchableOpacity>
-      </View>
+        </View>
     </Card>
   );
 
@@ -342,12 +353,17 @@ const PublicQuestionsScreen = () => {
           placeholderTextColor={colors.textSecondary}
           value={searchTerm}
           onChangeText={handleSearch}
+          returnKeyType="search"
+          onSubmitEditing={submitSearch}
         />
         {searchTerm.length > 0 && (
-          <TouchableOpacity onPress={() => handleSearch('')}>
+          <TouchableOpacity onPress={clearSearch}>
             <Icon name="clear" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
+        <TouchableOpacity onPress={submitSearch} style={[styles.searchBtn, { backgroundColor: colors.primary }]}>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Search</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -357,30 +373,34 @@ const PublicQuestionsScreen = () => {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            🤔 Community Questions
-          </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            Answer questions from the community and test your knowledge
-          </Text>
-        </View>
+
+        {/* Loading Indicator */}
+        {loading && questions.length === 0 && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary, marginTop: 10 }]}>
+              {query ? 'Searching questions...' : 'Loading questions...'}
+            </Text>
+          </View>
+        )}
 
         {/* Questions List */}
-        {questions.length > 0 ? (
+        {!loading && questions.length > 0 && (
           <View style={styles.questionsList}>
-            {questions.map(renderQuestion)}
+            {questions.map((q, i) => renderQuestion(q, i))}
           </View>
-        ) : !loading ? (
+        )}
+
+        {/* Empty State */}
+        {!loading && questions.length === 0 && (
           <View style={styles.emptyContainer}>
             <Icon name="quiz" size={60} color={colors.textSecondary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No questions found</Text>
             <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              {searchTerm ? 'Try adjusting your search terms' : 'Be the first to post a question!'}
+              {query ? 'Try adjusting your search terms' : 'Be the first to post a question!'}
             </Text>
           </View>
-        ) : null}
+        )}
 
         {/* Load More Button */}
         {hasMore && questions.length > 0 && (
@@ -406,7 +426,9 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    margin: 16,
+    marginHorizontal: 10,
+    marginVertical: 10,
+    marginBottom: 0,
     paddingHorizontal: 16,
     paddingVertical: 2,
     borderRadius: 12,
@@ -424,69 +446,42 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
+    paddingVertical: 10,
+  },
+  userAvator: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 5,
+    color: "white",
+    fontWeight: "600",
+    backgroundColor: "#F59E0B",
+  },
+  searchBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 8,
   },
   scrollView: {
     flex: 1,
   },
-  header: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
   questionsList: {
-    paddingHorizontal: 16,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10
   },
   questionCard: {
-    marginBottom: 16,
-    padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
-  },
-  questionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  questionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  questionCategory: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  difficultyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  difficultyText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  questionStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 12,
   },
   statText: {
     fontSize: 12,
@@ -495,17 +490,17 @@ const styles = StyleSheet.create({
   questionText: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 16,
+    marginBottom: 10,
     lineHeight: 24,
   },
   optionsContainer: {
-    marginBottom: 16,
+    marginBottom: 10,
   },
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    marginBottom: 8,
+    padding: 10,
+    marginBottom: 5,
     borderRadius: 8,
   },
   optionIndicator: {
@@ -521,40 +516,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     flex: 1,
   },
-  explanationContainer: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  explanationTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 6,
-  },
-  explanationText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
   questionFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  authorInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  authorText: {
-    fontSize: 12,
-    marginLeft: 4,
+    alignItems: 'center'
   },
   dateText: {
     fontSize: 12,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
   },
   actionButton: {
     flexDirection: 'row',
@@ -566,6 +534,16 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 12,
     marginLeft: 4,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    minHeight: 200,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
   emptyContainer: {
     alignItems: 'center',
