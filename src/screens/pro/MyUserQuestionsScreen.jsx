@@ -12,6 +12,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
@@ -22,6 +23,7 @@ import Button from '../../components/Button';
 const MyUserQuestionsScreen = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { user } = useAuth();
   const { t } = useTranslation();
 
   const [items, setItems] = useState([]);
@@ -129,6 +131,32 @@ const MyUserQuestionsScreen = () => {
   };
 
   const handleCreateQuestion = () => {
+    // Check if user has active pro subscription
+    if (!user || user?.subscriptionStatus !== 'pro') {
+      showMessage({
+        message: 'Subscription Required',
+        description: 'Pro subscription required to create questions.',
+        type: 'warning',
+        icon: 'warning',
+      });
+      return;
+    }
+    
+    // Check if subscription is expired
+    if (user.subscriptionExpiry) {
+      const now = new Date();
+      const expiryDate = new Date(user.subscriptionExpiry);
+      if (expiryDate < now) {
+        showMessage({
+          message: 'Subscription Expired',
+          description: 'Your pro subscription has expired. Please renew to continue.',
+          type: 'warning',
+          icon: 'warning',
+        });
+        return;
+      }
+    }
+    
     navigation.navigate('PostQuestion');
   };
 

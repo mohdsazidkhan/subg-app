@@ -69,6 +69,25 @@ const HomeScreen = () => {
   const [userLevelData, setUserLevelData] = useState(null);
   const [currentMonthQuestionCount, setCurrentMonthQuestionCount] = useState(0);
   console.log(topPerformers, 'topPerformers')
+  
+  // Helper function to check if user has active pro subscription
+  const hasActiveProSubscription = () => {
+    if (!user || user?.subscriptionStatus !== 'pro') {
+      return false;
+    }
+    
+    // Check if subscription is expired
+    if (user.subscriptionExpiry) {
+      const now = new Date();
+      const expiryDate = new Date(user.subscriptionExpiry);
+      if (expiryDate < now) {
+        return false; // Subscription expired
+      }
+    }
+    
+    return true;
+  };
+  
   useEffect(() => {
     fetchData();
     fetchProfileCompletion();
@@ -548,7 +567,7 @@ const HomeScreen = () => {
         {/* Add Question Section */}
         <AddQuestionSection
           onPress={() => navigation.navigate('PostQuestion')}
-          isProUser={user?.subscriptionStatus === 'pro'}
+          isProUser={hasActiveProSubscription()}
           currentMonthCount={currentMonthQuestionCount}
           monthlyLimit={50}
         />

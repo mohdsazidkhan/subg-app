@@ -208,8 +208,34 @@ function AuthStack() {
  */
 function MainTabs() {
   const { colors } = useTheme();
+  const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
-  const openCreate = useCallback(() => setShowCreate(true), []);
+  
+  // Check if user can create quiz/question
+  const canCreate = useCallback(() => {
+    // Only pro users with active subscription can create
+    if (!user || user?.subscriptionStatus !== 'pro') {
+      return false;
+    }
+    
+    // Check if subscription is expired
+    if (user.subscriptionExpiry) {
+      const now = new Date();
+      const expiryDate = new Date(user.subscriptionExpiry);
+      if (expiryDate < now) {
+        return false; // Subscription expired
+      }
+    }
+    
+    return true;
+  }, [user]);
+  
+  const openCreate = useCallback(() => {
+    if (canCreate()) {
+      setShowCreate(true);
+    }
+  }, [canCreate]);
+  
   const closeCreate = useCallback(() => setShowCreate(false), []);
   const navigation = useNavigation();
   const StackNav = Stack; // access for navigate via screen props in callbacks if needed

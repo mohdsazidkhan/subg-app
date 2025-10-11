@@ -12,6 +12,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
@@ -22,6 +23,7 @@ import Card from '../../components/Card';
 const MyQuestionsScreen = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { user } = useAuth();
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage } = useLanguage();
 
@@ -37,6 +39,24 @@ const MyQuestionsScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+
+  // Check if user has active pro subscription
+  const hasActiveProSubscription = () => {
+    if (!user || user?.subscriptionStatus !== 'pro') {
+      return false;
+    }
+    
+    // Check if subscription is expired
+    if (user.subscriptionExpiry) {
+      const now = new Date();
+      const expiryDate = new Date(user.subscriptionExpiry);
+      if (expiryDate < now) {
+        return false; // Subscription expired
+      }
+    }
+    
+    return true;
+  };
 
   useEffect(() => {
     loadQuestions();
@@ -297,7 +317,18 @@ const MyQuestionsScreen = () => {
             </Text>
             <TouchableOpacity
               style={[styles.createButton, { backgroundColor: colors.primary }]}
-              onPress={() => navigation.navigate('PostQuestion')}
+              onPress={() => {
+                if (hasActiveProSubscription()) {
+                  navigation.navigate('PostQuestion');
+                } else {
+                  showMessage({
+                    message: 'Subscription Required',
+                    description: 'Your pro subscription has expired. Please renew to continue.',
+                    type: 'warning',
+                    icon: 'warning',
+                  });
+                }
+              }}
             >
               <Text style={[styles.createButtonText, { color: 'white' }]}>Create Question</Text>
             </TouchableOpacity>
