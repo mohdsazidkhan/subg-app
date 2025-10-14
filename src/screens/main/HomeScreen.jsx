@@ -235,7 +235,7 @@ const HomeScreen = () => {
   const fetchCurrentMonthQuestionCount = async () => {
     try {
       if (user) {
-        const response = await API.getCurrentMonthQuestionCount();
+        const response = await API.getCurrentMonthQuestionCount(user._id);
         console.log('fetchCurrentMonthQuestionCount', response);
         if (response.success) {
           // Backend returns response.data.currentCount, not response.count

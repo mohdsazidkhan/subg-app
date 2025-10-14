@@ -517,15 +517,22 @@ class ApiService {
     });
   }
 
-  async getCurrentMonthQuestionCount() {
-    // Backend route is '/api/userQuestions/monthly-count'
-    // previous path 'current-month-count' accidentally matched the '/userQuestions/:id' route
-    // resulting in Invalid id errors. Use the correct endpoint.
-    return this.request('/api/userQuestions/monthly-count');
+  async getCurrentMonthQuestionCount(userId) {
+    // Backend route is '/api/userQuestions/monthly-count/:userId'
+    // Need to pass userId as parameter to get the correct endpoint
+    if (!userId) {
+      throw new Error('userId is required for getCurrentMonthQuestionCount');
+    }
+    return this.request(`/api/userQuestions/monthly-count/${userId}`);
   }
 
-  async getCurrentDayQuestionCount() {
-    return this.request('/api/userQuestions/daily-count');
+  async getCurrentDayQuestionCount(userId) {
+    // Backend route is '/api/userQuestions/daily-count/:userId'
+    // Need to pass userId as parameter to get the correct endpoint
+    if (!userId) {
+      throw new Error('userId is required for getCurrentDayQuestionCount');
+    }
+    return this.request(`/api/userQuestions/daily-count/${userId}`);
   }
 
   async getMyUserQuestions(params) {
@@ -1057,6 +1064,93 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify({ status }),
     });
+  }
+
+  // ===== ADMIN LEVELS =====
+  /**
+   * Get all levels (admin)
+   * @param {Object} params - Query parameters
+   * @returns {Promise<Object>} Levels data
+   */
+  async getAdminLevels(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.set('page', params.page);
+    if (params.limit) queryParams.set('limit', params.limit);
+    if (params.isActive !== undefined) queryParams.set('isActive', params.isActive);
+    if (params.search) queryParams.set('search', params.search);
+    
+    const queryString = queryParams.toString();
+    return this.request(`/api/admin/levels${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getAdminLevelById(id) {
+    return this.request(`/api/admin/levels/${id}`);
+  }
+
+  async createAdminLevel(levelData) {
+    return this.request('/api/admin/levels', {
+      method: 'POST',
+      body: JSON.stringify(levelData)
+    });
+  }
+
+  async updateAdminLevel(id, levelData) {
+    return this.request(`/api/admin/levels/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(levelData)
+    });
+  }
+
+  async deleteAdminLevel(id) {
+    return this.request(`/api/admin/levels/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async getAdminLevelStats(levelNumber) {
+    return this.request(`/api/admin/levels/stats/${levelNumber}`);
+  }
+
+  // ===== PUBLIC LEVELS (No auth required) =====
+  /**
+   * Get all public levels
+   * @returns {Promise<Object>} Public levels data
+   */
+  async getPublicLevels() {
+    return this.request('/api/public/levels');
+  }
+
+  /**
+   * Get level by number (public)
+   * @param {number} levelNumber - Level number
+   * @returns {Promise<Object>} Level data
+   */
+  async getPublicLevelByNumber(levelNumber) {
+    return this.request(`/api/public/levels/${levelNumber}`);
+  }
+
+  /**
+   * Get level progression roadmap
+   * @returns {Promise<Object>} Level roadmap data
+   */
+  async getPublicLevelRoadmap() {
+    return this.request('/api/public/levels/roadmap');
+  }
+
+  /**
+   * Get levels statistics
+   * @returns {Promise<Object>} Levels statistics
+   */
+  async getPublicLevelsStats() {
+    return this.request('/api/public/levels/stats');
+  }
+
+  /**
+   * Get current user's level info
+   * @returns {Promise<Object>} User level information
+   */
+  async getUserLevelInfo() {
+    return this.request('/api/public/levels/user/info');
   }
 }
 

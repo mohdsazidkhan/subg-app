@@ -54,9 +54,13 @@ const PostQuestionScreen = () => {
 
   const fetchCurrentMonthQuestionCount = async () => {
     try {
-      const response = await API.getCurrentMonthQuestionCount();
-      if (response.success) {
-        setQuestionCount(response.data);
+      const user = await AsyncStorage.getItem('user');
+      const userData = user ? JSON.parse(user) : null;
+      if (userData?._id) {
+        const response = await API.getCurrentMonthQuestionCount(userData._id);
+        if (response.success) {
+          setQuestionCount(response.data);
+        }
       }
     } catch (error) {
       console.error('Error fetching current month question count:', error);
@@ -65,9 +69,13 @@ const PostQuestionScreen = () => {
 
   const fetchCurrentDayQuestionCount = async () => {
     try {
-      const response = await API.getCurrentDayQuestionCount();
-      if (response.success) {
-        setDailyCount(response.data);
+      const user = await AsyncStorage.getItem('user');
+      const userData = user ? JSON.parse(user) : null;
+      if (userData?._id) {
+        const response = await API.getCurrentDayQuestionCount(userData._id);
+        if (response.success) {
+          setDailyCount(response.data);
+        }
       }
     } catch (error) {
       console.error('Error fetching current day question count:', error);
