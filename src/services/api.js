@@ -45,19 +45,14 @@ class ApiService {
   async request(endpoint, options = {}) {
     // Check network connectivity before making request
     const netInfo = await NetInfo.fetch();
-    if (!netInfo.isConnected) {
+    if (netInfo.isConnected === false) {
       const networkError = new Error('No internet connection. Please check your network settings.');
       networkError.isNetworkError = true;
       networkError.isOffline = true;
       throw networkError;
     }
-
-    if (netInfo.isConnected && netInfo.isInternetReachable === false) {
-      const networkError = new Error('Connected but internet is not accessible. Please check your connection.');
-      networkError.isNetworkError = true;
-      networkError.isLimitedConnection = true;
-      throw networkError;
-    }
+    // Allow requests to proceed even if isInternetReachable is temporarily false.
+    // Many devices report false briefly on first check even when the network works.
 
     const url = `${this.baseURL}${endpoint}`;
     const token = await AsyncStorage.getItem('token');

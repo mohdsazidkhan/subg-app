@@ -56,6 +56,9 @@ export const REWARDS = {
  * API URLs configuration
  * @type {string}
  */
-export const LOCAL_URL = fromEnv('LOCAL_URL', 'http://10.5.50.148:5000');
+export const LOCAL_URL = fromEnv('LOCAL_URL', 'http://192.168.1.83:5000');
+// export const LOCAL_URL = fromEnv('LOCAL_URL', 'http://10.5.49.60:5000');
 export const BACKEND_URL = fromEnv('API_URL', 'https://subg-backend.onrender.com');
-export const API_URL = fromEnv('API_URL', __DEV__ ? LOCAL_URL : BACKEND_URL);
+// Toggle local backend usage during development only when explicitly requested
+const USE_LOCAL_BACKEND = fromEnv('USE_LOCAL_BACKEND', '1') === '1';
+export const API_URL = fromEnv('API_URL', USE_LOCAL_BACKEND ? LOCAL_URL : BACKEND_URL);
