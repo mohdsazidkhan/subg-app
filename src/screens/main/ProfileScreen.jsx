@@ -39,7 +39,7 @@ const ProfileScreen = () => {
   const handleLogout = () => {
     Alert.alert(
       t('profile.logout'),
-      'Are you sure you want to logout?',
+      t('profile.logoutConfirm') || 'Are you sure you want to logout?',
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -163,15 +163,15 @@ const ProfileScreen = () => {
               color="white"
             />
             <Text style={styles.upgradeButtonText}>
-              {user?.subscriptionStatus === 'free' ? 'Upgrade Plan' : 'Manage Subscription'}
+              {user?.subscriptionStatus === 'free' ? t('subscription.upgrade') : t('subscription.manage')}
             </Text>
           </TouchableOpacity>
         </Card>
 
         {/* Stats */}
         <Card style={styles.statsContainer}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Your Stats
+          <Text style={[styles.sectionTitle, { color: colors.text }]}> 
+            {t('profile.myStats')}
           </Text>
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
@@ -179,8 +179,8 @@ const ProfileScreen = () => {
               <Text style={[styles.statNumber, { color: colors.text }]}>
                 {profileStats.quizzesCompleted}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Quizzes
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}> 
+                {t('navigation.quizzes')}
               </Text>
             </View>
             <View style={styles.statItem}>
@@ -188,8 +188,8 @@ const ProfileScreen = () => {
               <Text style={[styles.statNumber, { color: colors.text }]}>
                 {profileStats.totalScore}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Score
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}> 
+                {t('quiz.score')}
               </Text>
             </View>
             <View style={styles.statItem}>
@@ -197,8 +197,8 @@ const ProfileScreen = () => {
               <Text style={[styles.statNumber, { color: colors.text }]}>
                 #{profileStats.rank || '--'}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Rank
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}> 
+                {t('quiz.rank')}
               </Text>
             </View>
             <View style={styles.statItem}>
@@ -206,8 +206,8 @@ const ProfileScreen = () => {
               <Text style={[styles.statNumber, { color: colors.text }]}>
                 {profileStats.achievements}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Awards
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}> 
+                {t('profile.achievements')}
               </Text>
             </View>
           </View>

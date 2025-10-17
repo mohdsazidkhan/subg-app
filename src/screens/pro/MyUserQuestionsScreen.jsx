@@ -131,14 +131,15 @@ const MyUserQuestionsScreen = () => {
   };
 
   const handleCreateQuestion = () => {
-    // Check if user has active pro subscription
-    if (!user || user?.subscriptionStatus !== 'pro') {
-      showMessage({
-        message: 'Subscription Required',
-        description: 'Pro subscription required to create questions.',
-        type: 'warning',
-        icon: 'warning',
-      });
+    // Check if user has active subscription (any paid plan)
+    if (!user || !user?.subscriptionStatus) {
+      navigation.navigate('PostQuestion');
+      return;
+    }
+    
+    const paidPlans = ['basic', 'premium', 'pro'];
+    if (!paidPlans.includes(user.subscriptionStatus.toLowerCase())) {
+      navigation.navigate('PostQuestion');
       return;
     }
     
@@ -149,7 +150,7 @@ const MyUserQuestionsScreen = () => {
       if (expiryDate < now) {
         showMessage({
           message: 'Subscription Expired',
-          description: 'Your pro subscription has expired. Please renew to continue.',
+          description: 'Your subscription has expired. Please renew to continue.',
           type: 'warning',
           icon: 'warning',
         });
@@ -187,7 +188,7 @@ const MyUserQuestionsScreen = () => {
       <View style={styles.optionsContainer}>
         {q.options.map((option, idx) => (
           <View
-            key={idx}
+            key={`${q._id}-${idx}`}
             style={[
               styles.optionItem,
               {

@@ -46,15 +46,15 @@ const QuizResultScreen = () => {
   };
 
   const calculatePerformance = () => {
-    if (!quizResult) return { grade: 'F', message: 'Failed' };
+    if (!quizResult) return { grade: 'F', message: t('quiz.performance.failed') };
 
     const percentage = (quizResult.score / quizResult.totalQuestions) * 100;
 
-    if (percentage >= 90) return { grade: 'A', message: 'Excellent!' };
-    if (percentage >= 80) return { grade: 'B', message: 'Good Job!' };
-    if (percentage >= 70) return { grade: 'C', message: 'Not Bad!' };
-    if (percentage >= 60) return { grade: 'D', message: 'Passed!' };
-    return { grade: 'F', message: 'Keep Practicing!' };
+    if (percentage >= 90) return { grade: 'A', message: t('quiz.performance.excellent') };
+    if (percentage >= 80) return { grade: 'B', message: t('quiz.performance.goodJob') };
+    if (percentage >= 70) return { grade: 'C', message: t('quiz.performance.notBad') };
+    if (percentage >= 60) return { grade: 'D', message: t('quiz.performance.passed') };
+    return { grade: 'F', message: t('quiz.performance.keepPracticing') };
   };
 
   const getPerformanceColor = () => {
@@ -67,11 +67,11 @@ const QuizResultScreen = () => {
   const handleShare = async () => {
     try {
       const performance = calculatePerformance();
-      const message = `I just completed a quiz and scored ${quizResult.score}/${quizResult.totalQuestions}! Grade: ${performance.grade}. Download SUBG App to take quizzes and improve your knowledge!`;
+      const message = t('quiz.shareMessage', { score: quizResult.score, total: quizResult.totalQuestions, grade: performance.grade });
       
       await Share.share({
         message: message,
-        title: 'Quiz Result',
+        title: t('quiz.result'),
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -80,11 +80,11 @@ const QuizResultScreen = () => {
 
   const handleRetakeQuiz = () => {
     Alert.alert(
-      'Retake Quiz',
-      'Are you sure you want to retake this quiz?',
+      t('quiz.retakeTitle'),
+      t('quiz.retakeConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Retake', onPress: () => {
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('quiz.retake'), onPress: () => {
           navigation.navigate('AttemptQuiz', { quiz: route.params?.quiz });
         }}
       ]
@@ -118,7 +118,7 @@ const QuizResultScreen = () => {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
         <TopBar
-          title="Quiz Result"
+          title={t('quiz.result')}
           showBackButton={true}
           showLanguageToggle={true}
           onBackPress={navigation.goBack}
@@ -126,7 +126,7 @@ const QuizResultScreen = () => {
         />
         <Icon name="error" size={60} color={colors.error} />
         <Text style={[styles.errorText, { color: colors.text }]}>
-          No quiz result found
+          {t('quiz.noResult')}
         </Text>
       </View>
     );
@@ -138,7 +138,7 @@ const QuizResultScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
-        title="Quiz Result"
+        title={t('quiz.result')}
         showBackButton={true}
         showLanguageToggle={true}
         onBackPress={navigation.goBack}
@@ -177,31 +177,31 @@ const QuizResultScreen = () => {
         {/* Stats */}
         <Card style={styles.statsCard}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Quiz Statistics
+            {t('quiz.statistics')}
           </Text>
 
           <View style={styles.statsGrid}>
             {renderStatItem(
               'schedule',
-              'Time Taken',
+              t('quiz.timeTaken'),
               `${quizResult.timeTaken}s`,
               colors.primary
             )}
             {renderStatItem(
               'speed',
-              'Avg. Time/Question',
+              t('quiz.avgTimePerQuestion'),
               `${Math.round(quizResult.timeTaken / quizResult.totalQuestions)}s`,
               colors.info
             )}
             {renderStatItem(
               'star-rate',
-              'Questions Correct',
+              t('quiz.questionsCorrect'),
               quizResult.score,
               colors.success
             )}
             {renderStatItem(
               'clear',
-              'Questions Wrong',
+              t('quiz.questionsWrong'),
               quizResult.totalQuestions - quizResult.score,
               colors.error
             )}
@@ -212,7 +212,7 @@ const QuizResultScreen = () => {
         {quizResult.questions && quizResult.questions.length > 0 && (
           <Card style={styles.detailedCard}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Question Details
+              {t('quiz.questionDetails')}
             </Text>
 
             {quizResult.questions.map((question, index) => (
@@ -231,7 +231,7 @@ const QuizResultScreen = () => {
                 {!question.isCorrect && (
                   <View style={styles.answerContainer}>
                     <Text style={[styles.answerLabel, { color: colors.textSecondary }]}>
-                      Correct Answer:
+                      {t('quiz.correctAnswer')}:
                     </Text>
                     <Text style={[styles.correctAnswer, { color: colors.success }]}>
                       {question.correctAnswer}
@@ -247,7 +247,7 @@ const QuizResultScreen = () => {
         <View style={styles.actionContainer}>
           <View style={styles.actionRow}>
             <Button
-              title="Retake Quiz"
+              title={t('quiz.retakeQuiz')}
               onPress={handleRetakeQuiz}
               variant="outline"
               icon={<Icon name="refresh" size={20} color={colors.primary} />}
@@ -256,7 +256,7 @@ const QuizResultScreen = () => {
             />
 
             <Button
-              title="Share Result"
+              title={t('quiz.share')}
               onPress={handleShare}
               variant="secondary"
               icon={<Icon name="share" size={20} color={colors.text} />}
@@ -265,7 +265,7 @@ const QuizResultScreen = () => {
           </View>
 
           <Button
-            title="Continue Learning"
+            title={t('quiz.continueLearning')}
             onPress={handleContinue}
             variant="primary"
             icon={<Icon name="arrow-forward" size={20} color="white" />}
@@ -276,17 +276,17 @@ const QuizResultScreen = () => {
         {/* Motivational Message */}
         <Card style={styles.motivationCard}>
           <Text style={[styles.motivationTitle, { color: colors.text }]}>
-            {performance.grade === 'A' ? '🌟 Outstanding!' : 
-             performance.grade === 'B' ? '👏 Great Work!' :
-             performance.grade === 'C' ? '👍 Good Effort!' :
-             performance.grade === 'D' ? '📚 Keep Learning!' : '💪 Keep Practicing!'}
+            {performance.grade === 'A' ? t('quiz.motivation.outstanding') : 
+             performance.grade === 'B' ? t('quiz.motivation.greatWork') :
+             performance.grade === 'C' ? t('quiz.motivation.goodEffort') :
+             performance.grade === 'D' ? t('quiz.motivation.keepLearning') : t('quiz.motivation.keepPracticing')}
           </Text>
           <Text style={[styles.motivationText, { color: colors.textSecondary }]}>
-            {performance.grade === 'A' ? 'You have mastered this topic! Time to challenge yourself with harder quizzes.' :
-             performance.grade === 'B' ? 'Excellent work! You clearly understand the concepts.' :
-             performance.grade === 'C' ? 'Good effort! Practice more to improve your score.' :
-             performance.grade === 'D' ? 'You passed! Keep studying to improve your knowledge.' :
-             'Don\'t worry, learning is a process. Review the material and try again!'}
+            {performance.grade === 'A' ? t('quiz.motivation.aDetail') :
+             performance.grade === 'B' ? t('quiz.motivation.bDetail') :
+             performance.grade === 'C' ? t('quiz.motivation.cDetail') :
+             performance.grade === 'D' ? t('quiz.motivation.dDetail') :
+             t('quiz.motivation.fDetail')}
           </Text>
         </Card>
       </ScrollView>

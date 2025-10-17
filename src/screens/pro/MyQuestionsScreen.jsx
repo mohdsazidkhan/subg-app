@@ -40,9 +40,14 @@ const MyQuestionsScreen = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // Check if user has active pro subscription
-  const hasActiveProSubscription = () => {
-    if (!user || user?.subscriptionStatus !== 'pro') {
+  // Check if user has active subscription (any paid plan)
+  const hasActiveSubscription = () => {
+    if (!user || !user?.subscriptionStatus) {
+      return false;
+    }
+    
+    const paidPlans = ['basic', 'premium', 'pro'];
+    if (!paidPlans.includes(user.subscriptionStatus.toLowerCase())) {
       return false;
     }
     
@@ -318,16 +323,7 @@ const MyQuestionsScreen = () => {
             <TouchableOpacity
               style={[styles.createButton, { backgroundColor: colors.primary }]}
               onPress={() => {
-                if (hasActiveProSubscription()) {
-                  navigation.navigate('PostQuestion');
-                } else {
-                  showMessage({
-                    message: 'Subscription Required',
-                    description: 'Your pro subscription has expired. Please renew to continue.',
-                    type: 'warning',
-                    icon: 'warning',
-                  });
-                }
+                navigation.navigate('PostQuestion');
               }}
             >
               <Text style={[styles.createButtonText, { color: 'white' }]}>Create Question</Text>

@@ -314,15 +314,15 @@ const LandingScreen = () => {
     function SlideStats() {
       return (
         <View style={[styles.slideContainer, { backgroundColor: colors.background, minHeight: height - insets.top - insets.bottom }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Platform Statistics</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('landing.platformStats') || 'Platform Statistics'}</Text>
           <ScrollView style={styles.statsScrollView}>
             <View style={styles.statsGrid}>
-              {renderStat(stats.activeStudents, 'Active Students', 'group')}
-              {renderStat(stats.quizCategories, 'Quiz Categories', 'book')}
-              {renderStat(stats.subcategories, 'Subcategories', 'category')}
-              {renderStat(stats.totalQuizzes, 'Total Quizzes', 'quiz')}
-              {renderStat(stats.totalQuestions, 'Questions', 'help-outline')}
-              {renderStat(stats.quizzesTaken, 'Quizzes Taken', 'emoji-events')}
+              {renderStat(stats.activeStudents, t('landing.activeStudents') || 'Active Students', 'group')}
+              {renderStat(stats.quizCategories, t('landing.quizCategories') || 'Quiz Categories', 'book')}
+              {renderStat(stats.subcategories, t('landing.subcategories') || 'Subcategories', 'category')}
+              {renderStat(stats.totalQuizzes, t('landing.totalQuizzes') || 'Total Quizzes', 'quiz')}
+              {renderStat(stats.totalQuestions, t('landing.questions') || 'Questions', 'help-outline')}
+              {renderStat(stats.quizzesTaken, t('landing.quizzesTaken') || 'Quizzes Taken', 'emoji-events')}
             </View>
           </ScrollView>
         </View>
@@ -331,7 +331,7 @@ const LandingScreen = () => {
     function SlideLevels() {
       return (
         <View style={[styles.slideContainer, { backgroundColor: colors.background, minHeight: height - insets.top - insets.bottom }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quiz Levels</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('landing.quizLevels') || 'Quiz Levels'}</Text>
           <ScrollView style={styles.statsScrollView}>
             {levels.length > 0 ? (
               <FlatList
@@ -345,7 +345,7 @@ const LandingScreen = () => {
             ) : (
               <View style={styles.emptyState}>
                 <Icon name="quiz" size={48} color={colors.textSecondary} />
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No levels available</Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('errors.noData')}</Text>
               </View>
             )}
           </ScrollView>
@@ -355,23 +355,22 @@ const LandingScreen = () => {
     function SlideCategories() {
       return (
         <View style={[styles.slideContainer, { backgroundColor: colors.background, minHeight: height - insets.top - insets.bottom }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quiz Categories</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('home.categories')}</Text>
           <ScrollView style={styles.statsScrollView}>
             {categories.length > 0 ? (
               <FlatList
                 data={categories}
                 renderItem={renderCategoryCard}
                 keyExtractor={(item) => item._id}
-                numColumns={2}
+                numColumns={1}
                 scrollEnabled={false}
                 contentContainerStyle={styles.categoriesContainer}
-                columnWrapperStyle={styles.categoriesRow}
                 style={styles.categoriesList}
               />
             ) : (
               <View style={styles.emptyState}>
                 <Icon name="school" size={48} color={colors.textSecondary} />
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No categories available</Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('errors.noData')}</Text>
               </View>
             )}
           </ScrollView>
@@ -381,13 +380,17 @@ const LandingScreen = () => {
     function SlideFeatures() {
       return (
         <View style={[styles.slideContainer, { backgroundColor: colors.background, minHeight: height - insets.top - insets.bottom }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Why Choose SUBG?</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('landing.whyChoose')}</Text>
           <ScrollView style={styles.statsScrollView}>
             <View style={styles.featuresGrid}>
-              {renderFeature('quiz', 'Interactive Quizzes', 'Thousands of questions across subjects')}
-              {renderFeature('emoji-events', 'Leaderboards', 'Compete and climb the ranks')}
-              {renderFeature('trending-up', 'Progress Tracking', 'Monitor your improvement')}
-              {renderFeature('card-membership', 'Premium Features', 'Unlock more with subscription')}
+              {renderFeature('quiz', t('landing.features.interactiveTitle'), t('landing.features.interactiveDesc'))}
+              {renderFeature('emoji-events', t('landing.features.leaderboardsTitle'), t('landing.features.leaderboardsDesc'))}
+              {renderFeature('trending-up', t('landing.features.progressTitle'), t('landing.features.progressDesc'))}
+              {renderFeature('card-membership', t('landing.features.premiumTitle'), t('landing.features.premiumDesc'))}
+              {renderFeature('create', t('landing.features.quizCreateTitle'), t('landing.features.quizCreateDesc'))}
+              {renderFeature('forum', t('landing.features.communityTitle'), t('landing.features.communityDesc'))}
+              {renderFeature('military-tech', t('landing.features.topPerformersTitle'), t('landing.features.topPerformersDesc'))}
+              {renderFeature('calendar-today', t('landing.features.monthlyWinnersTitle'), t('landing.features.monthlyWinnersDesc'))}
             </View>
           </ScrollView>
         </View>
@@ -726,22 +729,22 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   categoriesContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 16
+    gap: 4
   },
   categoriesRow: {
-    columnGap: 16,
+    columnGap: 4,
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   categoriesList: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   categoryCard: {
     marginBottom: 16,
-    width: (width - 80) / 2 - 5,
+    width: '100%',
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',

@@ -36,7 +36,6 @@ function LabeledInput({ label, value, onChangeText, colors, ...props }) {
 const CreateUserQuizScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const { user } = useAuth();
-  const isPro = useMemo(() => (user?.subscriptionStatus || '').toLowerCase() === 'pro', [user]);
 
   // Steps
   const [step, setStep] = useState(1);
@@ -61,14 +60,8 @@ const CreateUserQuizScreen = ({ navigation }) => {
   });
 
   useEffect(() => {
-    if (!isPro) {
-      Alert.alert('Pro required', 'Upgrade to Pro to create quizzes', [
-        { text: 'OK', onPress: () => navigation.navigate('Subscription') },
-      ]);
-      return;
-    }
     fetchCategories();
-  }, [isPro]);
+  }, []);
 
   useEffect(() => {
     if (quizData.categoryId) {

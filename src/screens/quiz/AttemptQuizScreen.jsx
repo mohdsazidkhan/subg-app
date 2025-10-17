@@ -56,11 +56,11 @@ const AttemptQuizScreen = () => {
     // Hard-block leaving: hardware back submits automatically after confirmation
     const backAction = () => {
       Alert.alert(
-        'Exit Quiz?',
-        'If you exit now, your quiz will be auto-submitted.',
+        t('quiz.exitConfirmTitle'),
+        t('quiz.exitConfirmMessage'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Submit & Exit', style: 'destructive', onPress: () => handleSubmitQuiz() },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('quiz.submitAndExit'), style: 'destructive', onPress: () => handleSubmitQuiz() },
         ]
       );
       return true; // Prevent default back behavior
@@ -72,11 +72,11 @@ const AttemptQuizScreen = () => {
     const removeBeforeRemove = navigation.addListener('beforeRemove', (e) => {
       e.preventDefault();
       Alert.alert(
-        'Exit Quiz?',
-        'If you exit now, your quiz will be auto-submitted.',
+        t('quiz.exitConfirmTitle'),
+        t('quiz.exitConfirmMessage'),
         [
-          { text: 'Stay', style: 'cancel' },
-          { text: 'Submit & Exit', style: 'destructive', onPress: () => handleSubmitQuiz() },
+          { text: t('quiz.stay'), style: 'cancel' },
+          { text: t('quiz.submitAndExit'), style: 'destructive', onPress: () => handleSubmitQuiz() },
         ]
       );
     });
@@ -124,7 +124,7 @@ const AttemptQuizScreen = () => {
     } catch (error) {
       console.error('Error fetching quiz questions:', error);
       showMessage({
-        message: 'Failed to load quiz questions',
+        message: t('quiz.loadQuestionsFailed'),
         type: 'danger',
       });
       navigation.goBack();
@@ -159,11 +159,11 @@ const AttemptQuizScreen = () => {
 
   const handleTimeUp = () => {
     Alert.alert(
-      'Time\'s Up!',
-      'Your time for this quiz has ended. Your current answers will be submitted.',
+      t('quiz.timesUpTitle'),
+      t('quiz.timesUpMessage'),
       [
         {
-          text: 'Submit Now',
+          text: t('quiz.submitNow'),
           onPress: () => handleSubmitQuiz(),
         }
       ]
@@ -172,11 +172,11 @@ const AttemptQuizScreen = () => {
 
   const handleExitQuiz = () => {
     Alert.alert(
-      'Exit Quiz?',
-      'If you exit now, your quiz will be auto-submitted.',
+      t('quiz.exitConfirmTitle'),
+      t('quiz.exitConfirmMessage'),
       [
-        { text: 'Stay', style: 'cancel' },
-        { text: 'Submit & Exit', style: 'destructive', onPress: () => handleSubmitQuiz() },
+        { text: t('quiz.stay'), style: 'cancel' },
+        { text: t('quiz.submitAndExit'), style: 'destructive', onPress: () => handleSubmitQuiz() },
       ]
     );
   };
@@ -199,14 +199,14 @@ const AttemptQuizScreen = () => {
         });
       } else {
         showMessage({
-          message: result.message || 'Failed to submit quiz',
+          message: result.message || t('quiz.submitFailed'),
           type: 'danger',
         });
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);
       showMessage({
-        message: 'Failed to submit quiz. Please try again.',
+        message: t('quiz.submitFailedTry'),
         type: 'danger',
       });
     } finally {
@@ -232,14 +232,14 @@ const AttemptQuizScreen = () => {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
         <TopBar
-          title="Quiz"
+          title={t('navigation.quizzes')}
           showBackButton={false}
           showLanguageToggle={true}
           onLanguageToggle={handleLanguageToggle}
         />
         <Icon name="quiz" size={60} color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.text }]}>
-          Loading quiz questions...
+          {t('quiz.loadingQuestions')}
         </Text>
       </View>
     );
@@ -249,17 +249,17 @@ const AttemptQuizScreen = () => {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
         <TopBar
-          title="Quiz"
+          title={t('navigation.quizzes')}
           showBackButton={false}
           showLanguageToggle={true}
           onLanguageToggle={handleLanguageToggle}
         />
         <Icon name="error" size={60} color={colors.error} />
         <Text style={[styles.errorText, { color: colors.text }]}>
-          No questions found for this quiz
+          {t('quiz.noQuestions')}
         </Text>
         <Button
-          title="Go Back"
+          title={t('common.back')}
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         />
@@ -311,7 +311,7 @@ const AttemptQuizScreen = () => {
         {/* Question Card */}
         <View style={styles.questionContainer}>
           <Text style={[styles.questionNumber, { color: colors.textSecondary }]}>
-            Question {currentQuestionIndex + 1}
+            {t('quiz.question')} {currentQuestionIndex + 1}
           </Text>
           <Text style={[styles.questionText, { color: colors.text }]}>
             {currentQuestion.question}
@@ -359,7 +359,7 @@ const AttemptQuizScreen = () => {
         <View style={styles.navigationRow}>
           {currentQuestionIndex > 0 && (
             <Button
-              title="Previous"
+              title={t('common.previous')}
               onPress={handlePrevious}
               variant="outline"
               icon={<Icon name="arrow-back" size={20} color={colors.primary} />}
@@ -371,7 +371,7 @@ const AttemptQuizScreen = () => {
 
           {isLastQuestion ? (
             <Button
-              title={submitting ? 'Submitting...' : 'Submit Quiz'}
+              title={submitting ? t('quiz.submitting') : t('quiz.submit')}
               onPress={handleSubmitQuiz}
               variant="primary"
               icon={<Icon name="send" size={20} color="white" />}
@@ -380,7 +380,7 @@ const AttemptQuizScreen = () => {
             />
           ) : (
             <Button
-              title="Next"
+              title={t('common.next')}
               onPress={handleNext}
               variant="primary"
               icon={<Icon name="arrow-forward" size={20} color="white" />}
@@ -393,11 +393,11 @@ const AttemptQuizScreen = () => {
         {/* Quiz Info */}
         <View style={styles.quizInfo}>
           <Text style={[styles.quizInfoText, { color: colors.textSecondary }]}>
-            Answered: {Object.keys(answers).length} / {questions.length}
+            {t('quiz.answeredCount', { count: Object.keys(answers).length, total: questions.length })}
           </Text>
           {quiz.timeLimit && (
             <Text style={[styles.quizInfoText, { color: colors.textSecondary }]}>
-              Time: {formatTime(timeRemaining)}
+              {t('quiz.timeRemaining')}: {formatTime(timeRemaining)}
             </Text>
           )}
         </View>

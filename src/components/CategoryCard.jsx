@@ -9,6 +9,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
+import TranslatableText from './TranslatableText';
 
 const { width } = Dimensions.get('window');
 
@@ -74,19 +75,19 @@ const CategoryCard = ({
             color={colors.primary}
           />
         </View>
-        <Text
+        <TranslatableText
           style={[styles.title, { color: colors.text }]}
           numberOfLines={2}
         >
           {category.name}
-        </Text>
+        </TranslatableText>
         {category.description && (
-          <Text
+          <TranslatableText
             style={[styles.description, { color: colors.textSecondary }]}
             numberOfLines={2}
           >
             {category.description}
-          </Text>
+          </TranslatableText>
         )}
         {category.quizCount !== undefined && (
           <View style={styles.quizCount}>

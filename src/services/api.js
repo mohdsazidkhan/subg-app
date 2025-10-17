@@ -233,10 +233,6 @@ class ApiService {
     return this.request(`/api/student/subcategories?category=${categoryId}`);
   }
 
-  async getSubCategories(categoryId) {
-    return this.request(`/api/student/subcategories?category=${categoryId}`);
-  }
-
   async getCategoryQuizzes(categoryId) {
     return this.request(`/api/student/quizzes?category=${categoryId}`);
   }

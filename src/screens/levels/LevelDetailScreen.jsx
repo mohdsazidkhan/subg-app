@@ -214,7 +214,7 @@ const LevelDetailScreen = () => {
       </View>
 
       <Button
-        title={quiz.isCompleted ? 'Retake' : 'Start Quiz'}
+        title={quiz.isCompleted ? t('quiz.retake') : t('home.startQuiz')}
         onPress={() => setStartModalQuiz(quiz)}
         variant={quiz.isCompleted ? 'outline' : 'primary'}
         style={styles.quizButton}
@@ -226,7 +226,7 @@ const LevelDetailScreen = () => {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
         <TopBar
-          title="Level Details"
+          title={t('levels.detailsTitle')}
           showBackButton={true}
           showLanguageToggle={true}
           onBackPress={() => navigation.goBack()}
@@ -244,15 +244,15 @@ const LevelDetailScreen = () => {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
         <TopBar
-          title="Level Details"
+          title={t('levels.detailsTitle')}
           showBackButton={true}
           showLanguageToggle={true}
           onBackPress={() => navigation.goBack()}
           onLanguageToggle={handleLanguageToggle}
         />
         <Icon name="error" size={60} color={colors.error} />
-        <Text style={[styles.errorText, { color: colors.text }]}>
-          Level not found
+        <Text style={[styles.errorText, { color: colors.text }]}> 
+          {t('levels.notFound')}
         </Text>
         <Button
           title={t('common.back')}
@@ -266,7 +266,7 @@ const LevelDetailScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
-        title={`Level ${level.level}`}
+        title={`${t('levels.level')} ${level.level}`}
         showBackButton={true}
         showLanguageToggle={true}
         onBackPress={() => navigation.goBack()}
@@ -287,14 +287,14 @@ const LevelDetailScreen = () => {
         >
           <View style={styles.levelHeaderContent}>
             <Icon name={getLevelIcon(level.level)} size={60} color="white" />
-            <Text style={styles.levelNumber}>Level {level.level}</Text>
+            <Text style={styles.levelNumber}>{t('levels.level')} {level.level}</Text>
             <Text style={styles.levelName}>{level.name}</Text>
             <Text style={styles.levelDescription}>{level.description}</Text>
 
             <View style={styles.levelStats}>
               <View style={styles.levelStatItem}>
                 <Icon name="quiz" size={20} color="white" />
-                <Text style={styles.levelStatText}>{level.quizCount} Quizzes</Text>
+                <Text style={styles.levelStatText}>{t('levels.quizCount', { count: level.quizCount })}</Text>
               </View>
             </View>
           </View>
@@ -303,7 +303,7 @@ const LevelDetailScreen = () => {
         {/* Quizzes Section */}
         <View style={styles.quizzesSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Available Quizzes ({quizzes.length})
+            {t('levels.availableQuizzes', { count: quizzes.length })}
           </Text>
 
             {quizzes.length > 0 ? (
@@ -314,7 +314,7 @@ const LevelDetailScreen = () => {
             <Card style={styles.emptyCard}>
               <Icon name="quiz" size={40} color={colors.textSecondary} />
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                No quizzes available for this level
+                {t('levels.noQuizzesForLevel')}
               </Text>
             </Card>
           )}

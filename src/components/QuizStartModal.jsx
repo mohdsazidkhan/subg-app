@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
-import { Modal, View, Text, TouchableOpacity, Animated, Easing } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, Animated, Easing, Platform } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useTranslation } from 'react-i18next';
 
 const Row = ({ children, style }) => (
   <View style={[{ flexDirection: 'row', alignItems: 'center' }, style]}>{children}</View>
@@ -16,8 +17,9 @@ const Bullet = ({ children, dotColor, textColor }) => (
 
 const QuizStartModal = ({ visible, onClose, onConfirm, quiz }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const slide = useRef(new Animated.Value(300)).current;
-
+  console.log(quiz, 'QuizStartModal')
   useEffect(() => {
     Animated.timing(slide, {
       toValue: visible ? 0 : 300,
@@ -30,8 +32,12 @@ const QuizStartModal = ({ visible, onClose, onConfirm, quiz }) => {
   if (!visible) return null;
 
   const questions = quiz?.questionCount || quiz?.questionsCount || quiz?.totalMarks || (Array.isArray(quiz?.questions) ? quiz.questions.length : undefined);
-  const timeText = quiz?.timeLimit ? `${quiz.timeLimit} minutes time limit` : 'No time limit';
-  const categoryText = quiz?.category?.name || quiz?.subcategory?.name || quiz?.levelName || 'General';
+  const timeText = quiz?.timeLimit ? `${quiz.timeLimit} ${t('quiz.timeRemaining')}` : t('errors.noData');
+  const categoryText = quiz?.subcategory?.name
+    ? (quiz?.category?.name ? `${quiz.subcategory.name} (${quiz.category.name})` : quiz.subcategory.name)
+    : (quiz?.category?.name || quiz?.levelName || 'General');
+  const levelValue = quiz?.requiredLevel || quiz?.level || quiz?.levelNumber;
+  const levelText = levelValue ? `Level ${levelValue}` : 'Level not specified';
 
   return (
     <Modal transparent visible onRequestClose={onClose} animationType="fade">
@@ -55,7 +61,7 @@ const QuizStartModal = ({ visible, onClose, onConfirm, quiz }) => {
           <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 8 }}>
             <Icon name="play-arrow" size={28} color="#fff" />
           </View>
-          <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text }}>Start Quiz?</Text>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text }}>{t('home.startQuiz')}</Text>
         </Row>
 
         {/* Quiz summary card */}
@@ -67,20 +73,28 @@ const QuizStartModal = ({ visible, onClose, onConfirm, quiz }) => {
             <Icon name="timer" size={18} color={colors.textSecondary} />
             <Text style={{ marginLeft: 8, color: colors.textSecondary }}>{timeText}</Text>
           </Row>
-          <Row>
+          <Row style={{ marginBottom: 6 }}>
+            <Icon name="help-outline" size={18} color={colors.textSecondary} />
+            <Text style={{ marginLeft: 8, color: colors.textSecondary }}>
+          {typeof questions === 'number' ? `${questions} ${t('quiz.question')}` : t('errors.noData')}
+            </Text>
+          </Row>
+          <Row style={{ marginBottom: 6 }}>
             <Icon name="category" size={18} color={colors.textSecondary} />
             <Text style={{ marginLeft: 8, color: colors.textSecondary }}>{categoryText}</Text>
+          </Row>
+          <Row>
+            <Icon name="emoji-events" size={18} color={colors.textSecondary} />
+            <Text style={{ marginLeft: 8, color: colors.textSecondary }}>{levelText}</Text>
           </Row>
         </View>
 
         {/* Important Information */}
         <View style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          <Text style={{ color: colors.text, fontWeight: '800', marginBottom: 8 }}>Important Information</Text>
-          <Bullet dotColor={colors.textSecondary} textColor={colors.text}>Quiz will open in fullscreen mode</Bullet>
-          <Bullet dotColor={colors.textSecondary} textColor={colors.text}>You must complete the quiz in one session</Bullet>
-          <Bullet dotColor={colors.textSecondary} textColor={colors.text}>Exiting fullscreen will submit your quiz</Bullet>
-          <Bullet dotColor={colors.textSecondary} textColor={colors.text}>Back/refresh will submit the quiz</Bullet>
-          <Bullet dotColor={colors.textSecondary} textColor={colors.text}>Make sure you have a stable internet connection</Bullet>
+          <Text style={{ color: colors.text, fontWeight: '800', marginBottom: 8 }}>{t('quiz.result')}</Text>
+          <Bullet dotColor={colors.textSecondary} textColor={colors.text}>{t('errors.networkError')}</Bullet>
+          <Bullet dotColor={colors.textSecondary} textColor={colors.text}>{t('quiz.finish')}</Bullet>
+          <Bullet dotColor={colors.textSecondary} textColor={colors.text}>{t('common.back')}</Bullet>
         </View>
 
         {/* Actions */}
@@ -88,13 +102,13 @@ const QuizStartModal = ({ visible, onClose, onConfirm, quiz }) => {
           <TouchableOpacity onPress={onClose} style={{ flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', marginRight: 8 }}>
             <Row>
               <Icon name="close" size={18} color={colors.text} />
-              <Text style={{ color: colors.text, marginLeft: 6, fontWeight: '600' }}>Cancel</Text>
+              <Text style={{ color: colors.text, marginLeft: 6, fontWeight: '600' }}>{t('common.cancel')}</Text>
             </Row>
           </TouchableOpacity>
           <TouchableOpacity onPress={onConfirm} style={{ flex: 1, padding: 12, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', marginLeft: 8 }}>
             <Row>
               <Icon name="play-arrow" size={18} color="#fff" />
-              <Text style={{ color: '#fff', marginLeft: 6, fontWeight: '700' }}>Start Quiz</Text>
+              <Text style={{ color: '#fff', marginLeft: 6, fontWeight: '700' }}>{t('home.startQuiz')}</Text>
             </Row>
           </TouchableOpacity>
         </Row>

@@ -21,6 +21,7 @@ import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
+import TranslatableText from '../../components/TranslatableText';
 
 const { width } = Dimensions.get('window');
 
@@ -64,7 +65,7 @@ const ArticlesScreen = () => {
     } catch (error) {
       console.error('Error fetching data:', error);
       showMessage({
-        message: 'Failed to load articles',
+        message: t('articles.loadFailed'),
         type: 'danger',
       });
     } finally {
@@ -238,17 +239,17 @@ const ArticlesScreen = () => {
 
       <View style={styles.articleContent}>
         <View style={styles.articleHeader}>
-          <Text style={[styles.articleTitle, { color: colors.text }]} numberOfLines={2}>
+          <TranslatableText style={[styles.articleTitle, { color: colors.text }]} numberOfLines={2}>
             {article.title}
-          </Text>
+          </TranslatableText>
           {article.isPinned && (
             <Icon name="push-pin" size={16} color={colors.accent} />
           )}
         </View>
 
-        <Text style={[styles.articleExcerpt, { color: colors.textSecondary }]} numberOfLines={3}>
+        <TranslatableText style={[styles.articleExcerpt, { color: colors.textSecondary }]} numberOfLines={3}>
           {article.excerpt}
-        </Text>
+        </TranslatableText>
 
         <View style={styles.articleMeta}>
           <View style={styles.articleAuthor}>
@@ -294,9 +295,9 @@ const ArticlesScreen = () => {
 
         {article.tags && article.tags.length > 0 && (
           <View style={styles.articleTags}>
-            {article.tags.slice(0, 3).map((tag, index) => (
+            {article.tags.slice(0, 3).map((tag) => (
               <View
-                key={index}
+                key={tag}
                 style={[styles.tag, { backgroundColor: colors.primary + '20' }]}
               >
                 <Text style={[styles.tagText, { color: colors.primary }]}>
@@ -329,12 +330,12 @@ const ArticlesScreen = () => {
         )}
 
         <View style={styles.featuredContent}>
-          <Text style={[styles.featuredTitle, { color: colors.text }]} numberOfLines={2}>
+          <TranslatableText style={[styles.featuredTitle, { color: colors.text }]} numberOfLines={2}>
             {article.title}
-          </Text>
-          <Text style={[styles.featuredExcerpt, { color: colors.textSecondary }]} numberOfLines={2}>
+          </TranslatableText>
+          <TranslatableText style={[styles.featuredExcerpt, { color: colors.textSecondary }]} numberOfLines={2}>
             {article.excerpt}
-          </Text>
+          </TranslatableText>
 
           <View style={styles.featuredMeta}>
             <Text style={[styles.featuredAuthor, { color: colors.textSecondary }]}>
@@ -353,8 +354,8 @@ const ArticlesScreen = () => {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
         <Icon name="article" size={60} color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>
-          Loading articles...
+        <Text style={[styles.loadingText, { color: colors.text }]}> 
+          {t('articles.loading')}
         </Text>
       </View>
     );
@@ -363,7 +364,7 @@ const ArticlesScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
-        title="Articles"
+        title={t('articles.title')}
         showMenuButton={true}
         onMenuPress={() => navigation.navigate('MainTabs', { screen: 'More' })}
       />
@@ -382,7 +383,7 @@ const ArticlesScreen = () => {
               <Icon name="search" size={18} color={colors.textSecondary} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Search articles"
+                placeholder={t('articles.searchPlaceholder')}
                 placeholderTextColor={colors.textSecondary}
                 value={filters.search}
                 onChangeText={(text) => setFilters(prev => ({ ...prev, search: text }))}
@@ -395,8 +396,8 @@ const ArticlesScreen = () => {
         {/* Featured Articles */}
         {featuredArticles.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              🌟 Featured Articles
+            <Text style={[styles.sectionTitle, { color: colors.text }]}> 
+              🌟 {t('articles.featured')}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {featuredArticles.map(renderFeaturedArticle)}
@@ -421,7 +422,7 @@ const ArticlesScreen = () => {
                   { color: selectedCategory === 'all' ? 'white' : colors.primary }
                 ]}
               >
-                All
+                {t('articles.all')}
               </Text>
             </TouchableOpacity>
                 
@@ -450,14 +451,14 @@ const ArticlesScreen = () => {
 
         {/* Articles List */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            📖 All Articles
+          <Text style={[styles.sectionTitle, { color: colors.text }]}> 
+            📖 {t('articles.allArticles')}
           </Text>
           {Array.isArray(articles) && articles.map(renderArticleCard)}
           {Array.isArray(articles) && articles.length === 0 && (
             <View style={styles.emptyState}>
               <Icon name="article" size={36} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No articles found</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('articles.noneFound')}</Text>
             </View>
           )}
           {hasMore && (
@@ -466,7 +467,7 @@ const ArticlesScreen = () => {
               disabled={isLoadingMore}
               style={[styles.loadMoreBtn, { backgroundColor: colors.primary }]}
             >
-              <Text style={styles.loadMoreText}>{isLoadingMore ? 'Loading...' : 'Load More'}</Text>
+              <Text style={styles.loadMoreText}>{isLoadingMore ? t('articles.loadingMore') : t('articles.loadMore')}</Text>
             </TouchableOpacity>
           )}
         </View>

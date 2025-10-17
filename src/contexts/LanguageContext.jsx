@@ -11,6 +11,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { translateWithCache } from '../services/translator';
 
 /**
  * Language context for managing app language
@@ -61,6 +62,7 @@ export const LanguageProvider = ({ children }) => {
     currentLanguage,
     changeLanguage,
     isRTL: currentLanguage === 'ar',
+    translateDynamic: async (text) => translateWithCache(text, currentLanguage),
   };
 
   return (

@@ -33,7 +33,7 @@ const MoreScreen = () => {
   const handleLogout = () => {
     Alert.alert(
       t('profile.logout'),
-      'Are you sure you want to logout?',
+      t('profile.logoutConfirm') || 'Are you sure you want to logout?',
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -143,7 +143,7 @@ const MoreScreen = () => {
         `https://play.google.com/store/apps/details?id=${user?.packageName || 'com.subg.app'}`
       );
     } catch (error) {
-      Alert.alert('Error', 'Could not open app store');
+      Alert.alert(t('common.error'), t('errors.loadingFailed'));
     }
   };
 

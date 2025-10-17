@@ -42,7 +42,7 @@ const LevelsScreen = () => {
     } catch (error) {
       console.error('Error fetching levels:', error);
         showMessage({
-          message: 'Failed to load levels',
+          message: t('levels.loadFailed'),
           type: 'danger',
         });
     } finally {
@@ -77,7 +77,7 @@ const LevelsScreen = () => {
         onPress={() => {
           if (isLocked) {
             showMessage({
-              message: 'This level is locked. Complete previous levels to unlock.',
+              message: t('levels.lockedMessage'),
               type: 'info',
             });
             return;
@@ -116,14 +116,14 @@ const LevelsScreen = () => {
           <View style={styles.statItem}>
             <Icon name="quiz" size={16} color={colors.textSecondary} />
             <Text style={[styles.statText, { color: colors.textSecondary }]}>
-              {level.quizCount} quizzes
+              {t('levels.quizCount', { count: level.quizCount })}
             </Text>
           </View>
           
           <View style={styles.statItem}>
             <Icon name="timer" size={16} color={colors.textSecondary} />
             <Text style={[styles.statText, { color: colors.textSecondary }]}>
-              {level.estimatedTime} min
+              {t('levels.estimatedMinutes', { minutes: level.estimatedTime })}
             </Text>
           </View>
         </View>
@@ -131,7 +131,7 @@ const LevelsScreen = () => {
         {level.difficulty && (
           <View style={styles.difficultyContainer}>
             <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>
-              Difficulty: 
+              {t('levels.difficulty')}: 
             </Text>
             <Text style={[
               styles.difficultyLevel,
@@ -203,10 +203,10 @@ const LevelsScreen = () => {
           <View style={styles.headerContent}>
             <Icon name="school" size={40} color={colors.primary} />
             <Text style={[styles.headerTitle, { color: colors.text }]}>
-              Learning Levels
+              {t('levels.headerTitle')}
             </Text>
             <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-              Progress through levels to unlock new content
+              {t('levels.headerSubtitle')}
             </Text>
           </View>
         </Card>
@@ -221,10 +221,10 @@ const LevelsScreen = () => {
           <View style={styles.emptyContent}>
             <Icon name="school" size={60} color={colors.textSecondary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              No Levels Available
+              {t('levels.emptyTitle')}
             </Text>
             <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              Levels will be added soon. Check back later!
+              {t('levels.emptySubtitle')}
             </Text>
           </View>
         </Card>

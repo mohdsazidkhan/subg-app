@@ -10,6 +10,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
+import TranslatableText from './TranslatableText';
 
 const { width } = Dimensions.get('window');
 
@@ -60,16 +61,16 @@ const BlogCard = ({
         )}
       </View>
       <View style={[styles.content, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+        <TranslatableText style={[styles.title, { color: colors.text }]} numberOfLines={2}>
           {blog.title}
-        </Text>
+        </TranslatableText>
         {blog.excerpt && (
-          <Text
+          <TranslatableText
             style={[styles.excerpt, { color: colors.textSecondary }]}
             numberOfLines={3}
           >
             {blog.excerpt}
-          </Text>
+          </TranslatableText>
         )}
         <View style={styles.footer}>
           <View style={styles.authorInfo}>

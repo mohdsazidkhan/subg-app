@@ -12,13 +12,12 @@ import { useTheme } from '../contexts/ThemeContext';
 const AddQuestionSection = ({
   onPress,
   isProUser = false,
-  currentMonthCount = 0,
-  monthlyLimit = 100,
+  currentMonthCount = 0
 }) => {
   const { colors } = useTheme();
 
   const getProgressPercentage = () => {
-    return Math.min((currentMonthCount / monthlyLimit) * 100, 100);
+    return Math.min((currentMonthCount?.currentCount / currentMonthCount?.limit) * 100, 100);
   };
 
   const getProgressColor = () => {
@@ -32,7 +31,7 @@ const AddQuestionSection = ({
     {
       step: "1",
       title: "Create Questions",
-      description: "Submit quiz questions through the Pro User dashboard"
+      description: "Submit quiz questions through your dashboard"
     },
     {
       step: "2", 
@@ -90,7 +89,7 @@ const AddQuestionSection = ({
               Earn Prize by Adding Questions
             </Text>
             <Text style={[styles.mainSubtitle, { color: colors.textSecondary }]}>
-              Pro users can earn money by creating quality questions. Get ₹10 for every approved question!
+              All users can earn money by creating quality questions. Get ₹10 for every approved question!
             </Text>
           </View>
         </View>
@@ -103,7 +102,7 @@ const AddQuestionSection = ({
                 This Month
               </Text>
               <Text style={[styles.progressCount, { color: colors.text }]}>
-                {currentMonthCount}/{monthlyLimit}
+                {currentMonthCount?.currentCount}/{currentMonthCount?.limit}
               </Text>
             </View>
             <View style={[styles.progressBar, { backgroundColor: colors.textSecondary + '20' }]}>

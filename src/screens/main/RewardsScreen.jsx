@@ -56,7 +56,7 @@ const RewardsScreen = () => {
     } catch (error) {
       console.error('Error fetching rewards data:', error);
       showMessage({
-        message: 'Failed to load rewards data',
+        message: t('rewards.loadFailed'),
         type: 'danger',
       });
     } finally {
@@ -78,19 +78,19 @@ const RewardsScreen = () => {
   const handleRedeemReward = async (reward) => {
     if (userPoints < reward.pointsRequired) {
       Alert.alert(
-        'Insufficient Points',
-        `You need ${reward.pointsRequired - userPoints} more points to redeem this reward.`,
-        [{ text: 'OK' }]
+        t('rewards.insufficientPointsTitle'),
+        t('rewards.insufficientPointsMessage', { needed: reward.pointsRequired - userPoints }),
+        [{ text: t('common.ok') }]
       );
       return;
     }
 
     Alert.alert(
-      'Redeem Reward',
-      `Are you sure you want to redeem ${reward.name} for ${reward.pointsRequired} points?`,
+      t('rewards.redeemTitle'),
+      t('rewards.redeemConfirm', { name: reward.name, points: reward.pointsRequired }),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Redeem', onPress: () => processRedemption(reward) },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('rewards.redeemCta'), onPress: () => processRedemption(reward) },
       ]
     );
   };
@@ -103,7 +103,7 @@ const RewardsScreen = () => {
       if (response.success) {
         setUserPoints(userPoints - reward.pointsRequired);
         showMessage({
-          message: `Successfully redeemed ${reward.name}!`,
+          message: t('rewards.redeemSuccess', { name: reward.name }),
           type: 'success',
         });
         
@@ -111,14 +111,14 @@ const RewardsScreen = () => {
         await fetchRewardsData();
       } else {
         showMessage({
-          message: response.message || 'Failed to redeem reward',
+          message: response.message || t('rewards.redeemFailed'),
           type: 'danger',
         });
       }
     } catch (error) {
       console.error('Error redeeming reward:', error);
       showMessage({
-        message: 'Failed to redeem reward. Please try again.',
+        message: t('rewards.redeemFailedTry'),
         type: 'danger',
       });
     } finally {
@@ -199,7 +199,7 @@ const RewardsScreen = () => {
             </View>
 
             <Button
-              title={canRedeem ? 'Redeem' : 'Not Enough Points'}
+              title={canRedeem ? t('rewards.redeemCta') : t('rewards.notEnoughPoints')}
               onPress={() => handleRedeemReward(reward)}
               variant={canRedeem ? 'primary' : 'secondary'}
               disabled={!canRedeem || redeeming}
@@ -254,9 +254,9 @@ const RewardsScreen = () => {
         <LinearGradient colors={colors.backgroundGradient} style={styles.header}>
           <View style={styles.headerContent}>
             <Icon name="redeem" size={40} color="white" />
-            <Text style={styles.headerTitle}>Rewards Center</Text>
+            <Text style={styles.headerTitle}>{t('rewards.headerTitle')}</Text>
             <Text style={styles.headerSubtitle}>
-              Earn points and redeem exciting rewards
+              {t('rewards.headerSubtitle')}
             </Text>
           </View>
         </LinearGradient>
@@ -267,7 +267,7 @@ const RewardsScreen = () => {
             <View style={styles.pointsInfo}>
               <Icon name="star" size={32} color={colors.warning} />
               <Text style={[styles.userPointsLabel, { color: colors.textSecondary }]}>
-                Your Points
+                {t('rewards.yourPoints')}
               </Text>
               <Text style={[styles.userPointsValue, { color: colors.text }]}>
                 {userPoints.toLocaleString()}
@@ -277,7 +277,7 @@ const RewardsScreen = () => {
             <View style={styles.pointsStats}>
               <View style={styles.pointsStat}>
                 <Text style={[styles.pointsStatLabel, { color: colors.textSecondary }]}>
-                  Earned This Month
+                  {t('rewards.earnedThisMonth')}
                 </Text>
                 <Text style={[styles.pointsStatValue, { color: colors.success }]}>
                   1,250
@@ -286,7 +286,7 @@ const RewardsScreen = () => {
               
               <View style={styles.pointsStat}>
                 <Text style={[styles.pointsStatLabel, { color: colors.textSecondary }]}>
-                  Redeemed This Month
+                  {t('rewards.redeemedThisMonth')}
                 </Text>
                 <Text style={[styles.pointsStatValue, { color: colors.warning }]}>
                   500
@@ -299,7 +299,7 @@ const RewardsScreen = () => {
         {/* Available Rewards */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Available Rewards ({availableRewards.length})
+            {t('rewards.availableRewards', { count: availableRewards.length })}
           </Text>
 
           {availableRewards.length > 0 ? (
@@ -309,10 +309,10 @@ const RewardsScreen = () => {
               <View style={styles.emptyContent}>
                 <Icon name="card-giftcard" size={48} color={colors.textSecondary} />
                 <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                  No Rewards Available
+                  {t('rewards.emptyAvailableTitle')}
                 </Text>
                 <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                  Check back later for new rewards!
+                  {t('rewards.emptyAvailableSubtitle')}
                 </Text>
               </View>
             </Card>
@@ -323,7 +323,7 @@ const RewardsScreen = () => {
         {redeemedRewards.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Redeemed Rewards ({redeemedRewards.length})
+              {t('rewards.redeemedRewards', { count: redeemedRewards.length })}
             </Text>
             
             {redeemedRewards.map(reward => (
@@ -342,7 +342,7 @@ const RewardsScreen = () => {
                       {reward.name}
                     </Text>
                     <Text style={[styles.redeemedDate, { color: colors.textSecondary }]}>
-                      Redeemed on {new Date(reward.redeemedAt).toLocaleDateString()}
+                      {t('rewards.redeemedOn', { date: new Date(reward.redeemedAt).toLocaleDateString() })}
                     </Text>
                   </View>
 

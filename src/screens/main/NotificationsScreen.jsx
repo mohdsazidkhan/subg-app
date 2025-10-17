@@ -18,6 +18,7 @@ import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
 import { showMessage } from 'react-native-flash-message';
+import TranslatableText from '../../components/TranslatableText';
 
 const NotificationsScreen = () => {
   const navigation = useNavigation();
@@ -45,7 +46,7 @@ const NotificationsScreen = () => {
     } catch (error) {
       console.error('Error fetching notifications:', error);
       showMessage({
-        message: 'Failed to load notifications',
+        message: t('notifications.loadFailed'),
         type: 'danger',
       });
     } finally {
@@ -98,7 +99,7 @@ const NotificationsScreen = () => {
         prev.map(notification => ({ ...notification, isRead: true }))
       );
       showMessage({
-        message: 'All notifications marked as read',
+        message: t('notifications.allMarkedRead'),
         type: 'success',
       });
     } catch (error) {
@@ -149,14 +150,14 @@ const NotificationsScreen = () => {
     const notificationTime = new Date(timestamp);
     const diffInMinutes = Math.floor((now - notificationTime) / (1000 * 60));
 
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1) return t('time.justNow');
+    if (diffInMinutes < 60) return t('time.minutesAgo', { count: diffInMinutes });
     
     const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 24) return t('time.hoursAgo', { count: diffInHours });
     
     const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays}d ago`;
+    if (diffInDays < 7) return t('time.daysAgo', { count: diffInDays });
     
     return notificationTime.toLocaleDateString();
   };
@@ -184,17 +185,17 @@ const NotificationsScreen = () => {
         </View>
 
         <View style={styles.textContainer}>
-          <Text style={[
+          <TranslatableText style={[
             styles.notificationTitle,
             { color: colors.text },
             !notification.isRead && { fontWeight: 'bold' }
           ]}>
             {notification.title}
-          </Text>
+          </TranslatableText>
           
-          <Text style={[styles.notificationMessage, { color: colors.textSecondary }]} numberOfLines={2}>
+          <TranslatableText style={[styles.notificationMessage, { color: colors.textSecondary }]} numberOfLines={2}>
             {notification.message}
-          </Text>
+          </TranslatableText>
 
           <View style={styles.notificationFooter}>
             <Text style={[styles.timeText, { color: colors.textSecondary }]}>
@@ -251,9 +252,9 @@ const NotificationsScreen = () => {
         <LinearGradient colors={colors.backgroundGradient} style={styles.header}>
           <View style={styles.headerContent}>
             <Icon name="notifications" size={40} color="white" />
-            <Text style={styles.headerTitle}>Notifications</Text>
+            <Text style={styles.headerTitle}>{t('navigation.notifications')}</Text>
             <Text style={styles.headerSubtitle}>
-              Stay updated with your progress and announcements
+              {t('notifications.headerSubtitle')}
             </Text>
           </View>
         </LinearGradient>
@@ -266,7 +267,7 @@ const NotificationsScreen = () => {
                 {notifications.length}
               </Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Total
+                {t('common.total')}
               </Text>
             </View>
             
@@ -275,7 +276,7 @@ const NotificationsScreen = () => {
                 {unreadCount}
               </Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Unread
+                {t('notifications.unread')}
               </Text>
             </View>
 
@@ -286,7 +287,7 @@ const NotificationsScreen = () => {
               >
                 <Icon name="done-all" size={20} color={colors.success} />
                 <Text style={[styles.markAllText, { color: colors.success }]}>
-                  Mark All Read
+                  {t('notifications.markAllRead')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -303,10 +304,10 @@ const NotificationsScreen = () => {
             <View style={styles.emptyContent}>
               <Icon name="notifications-none" size={60} color={colors.textSecondary} />
               <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                No Notifications
+                {t('notifications.emptyTitle')}
               </Text>
               <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                You're all caught up! New notifications will appear here.
+                {t('notifications.emptySubtitle')}
               </Text>
             </View>
           </Card>

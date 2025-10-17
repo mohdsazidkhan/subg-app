@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,6 +10,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import LanguagePickerModal from './LanguagePickerModal';
 
 const TopBar = ({
   title,
@@ -25,7 +27,9 @@ const TopBar = ({
   onThemeToggle,
 }) => {
   const { colors, isDark } = useTheme();
+  const { currentLanguage } = useLanguage();
   const insets = useSafeAreaInsets();
+  const [showPicker, setShowPicker] = useState(false);
 
   return (
     <>
@@ -98,10 +102,24 @@ const TopBar = ({
             {showLanguageToggle && (
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={onLanguageToggle}
+                onPress={() => setShowPicker(true)}
                 activeOpacity={0.7}
               >
-                <Icon name="language" size={24} color={colors.text} />
+                <View style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(0,0,0,0.05)'
+                }}>
+                  <Text style={{
+                    color: colors.text,
+                    fontWeight: '700',
+                    fontSize: 12,
+                    letterSpacing: 0.5,
+                  }}>
+                    {(currentLanguage || 'en').toUpperCase()}
+                  </Text>
+                </View>
               </TouchableOpacity>
             )}
             {rightIcon && (
@@ -116,6 +134,7 @@ const TopBar = ({
           </View>
         </View>
       </View>
+      <LanguagePickerModal visible={showPicker} onClose={() => setShowPicker(false)} />
     </>
   );
 };

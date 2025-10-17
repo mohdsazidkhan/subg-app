@@ -70,9 +70,14 @@ const HomeScreen = () => {
   const [currentMonthQuestionCount, setCurrentMonthQuestionCount] = useState(0);
   console.log(topPerformers, 'topPerformers')
   
-  // Helper function to check if user has active pro subscription
-  const hasActiveProSubscription = () => {
-    if (!user || user?.subscriptionStatus !== 'pro') {
+  // Helper function to check if user has active subscription (any paid plan)
+  const hasActiveSubscription = () => {
+    if (!user || !user?.subscriptionStatus) {
+      return false;
+    }
+    
+    const paidPlans = ['basic', 'premium', 'pro'];
+    if (!paidPlans.includes(user.subscriptionStatus.toLowerCase())) {
       return false;
     }
     
@@ -238,8 +243,7 @@ const HomeScreen = () => {
         const response = await API.getCurrentMonthQuestionCount(user._id);
         console.log('fetchCurrentMonthQuestionCount', response);
         if (response.success) {
-          // Backend returns response.data.currentCount, not response.count
-          setCurrentMonthQuestionCount(response.data?.currentCount || 0);
+          setCurrentMonthQuestionCount(response.data || 0);
         }
       }
     } catch (error) {
@@ -462,7 +466,7 @@ const HomeScreen = () => {
         {/* Categories Carousel */}
         {categories.length > 0 && (
           <Carousel
-            title="📚 Categories"
+            title={`${t('home.categories')}`}
             onViewAllPress={() => navigation.navigate('Search')}
             cardWidth={width * 0.7}
           >
@@ -484,7 +488,7 @@ const HomeScreen = () => {
         {/* Subcategories Carousel */}
         {subcategories.length > 0 && (
           <Carousel
-            title="🔍 Subcategories"
+            title={`${t('home.categories')}`}
             onViewAllPress={() => navigation.navigate('Search')}
             cardWidth={width * 0.6}
           >
@@ -506,7 +510,7 @@ const HomeScreen = () => {
         {/* Levels Carousel */}
         {levels.length > 0 && (
           <Carousel
-            title="🏆 Learning Levels"
+            title={`${t('home.levels')}`}
             onViewAllPress={() => navigation.navigate('Levels')}
             cardWidth={width * 0.75}
           >
@@ -526,7 +530,7 @@ const HomeScreen = () => {
         {/* Previous Month Legends */}
         {monthlyLegends.length > 0 && (
           <Carousel
-            title="👑 Previous Month Legends"
+            title={`${t('home.previousMonthLegends')}`}
             onViewAllPress={() => navigation.navigate('Leaderboard')}
             cardWidth={width * 0.7}
           >
@@ -543,7 +547,7 @@ const HomeScreen = () => {
         {/* Top 10 Performers Current Month - Carousel like Previous Month Legends */}
         {topPerformers.length > 0 && (
           <Carousel
-            title="🏅 Top 10 Performers This Month"
+            title={`${t('home.topPerformersThisMonth')}`}
             onViewAllPress={() => navigation.navigate('Leaderboard')}
             cardWidth={width * 0.7}
           >
@@ -567,9 +571,8 @@ const HomeScreen = () => {
         {/* Add Question Section */}
         <AddQuestionSection
           onPress={() => navigation.navigate('PostQuestion')}
-          isProUser={hasActiveProSubscription()}
+          isProUser={hasActiveSubscription()}
           currentMonthCount={currentMonthQuestionCount}
-          monthlyLimit={50}
         />
 
         {/* Create Quiz & Earn Subscription Section */}
@@ -588,7 +591,7 @@ const HomeScreen = () => {
         {/* Blogs Section */}
         {blogs.length > 0 && (
           <Carousel
-            title="📖 Latest Blogs & Articles"
+            title={`${t('home.latestBlogs')}`}
             onViewAllPress={() => navigation.navigate('Articles')}
             cardWidth={width * 0.9}
           >

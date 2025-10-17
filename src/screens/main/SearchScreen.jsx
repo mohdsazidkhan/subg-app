@@ -9,6 +9,7 @@ import {
   FlatList,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import API from '../../services/api';
 import { useNavigation } from '@react-navigation/native';
@@ -16,6 +17,7 @@ import QuizStartModal from '../../components/QuizStartModal';
 
 const SearchScreen = () => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState({ quizzes: [], categories: [], subcategories: [] });
@@ -138,7 +140,7 @@ const SearchScreen = () => {
             style={[styles.searchInput, { color: colors.text }]}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search quizzes, categories..."
+            placeholder={t('common.search')}
             placeholderTextColor={colors.textSecondary}
             onSubmitEditing={handleSearch}
           />
@@ -154,7 +156,7 @@ const SearchScreen = () => {
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Icon name="label" size={16} color={colors.textSecondary} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Categories</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('navigation.categories')}</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {results.categories.map((cat) => (
@@ -175,7 +177,7 @@ const SearchScreen = () => {
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Icon name="bookmark" size={16} color={colors.textSecondary} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Subcategories</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('navigation.categories')}</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {results.subcategories.map((sub) => (
@@ -197,7 +199,7 @@ const SearchScreen = () => {
           <>
             <View style={styles.sectionHeaderRow}>
               <Icon name="quiz" size={16} color={colors.textSecondary} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Quizzes</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('navigation.quizzes')}</Text>
             </View>
             <FlatList
               data={results.quizzes}
@@ -207,15 +209,15 @@ const SearchScreen = () => {
             />
             {hasMore && (
               <TouchableOpacity style={[styles.loadMoreBtn, { backgroundColor: colors.primary }]} onPress={handleLoadMore} disabled={isLoading}>
-                <Text style={styles.loadMoreText}>{isLoading ? 'Loading...' : 'Load More'}</Text>
+                <Text style={styles.loadMoreText}>{isLoading ? t('common.loading') : t('common.next')}</Text>
               </TouchableOpacity>
             )}
           </>
         ) : (
           <View style={styles.emptyContainer}>
             <Icon name="search-off" size={60} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {searchQuery ? 'No results found' : 'Start searching for quizzes'}
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}> 
+              {searchQuery ? t('errors.noData') : t('common.search')}
             </Text>
           </View>
         )}

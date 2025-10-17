@@ -5,10 +5,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
+import TranslatableText from './TranslatableText';
 
 const { width } = Dimensions.get('window');
 
@@ -73,21 +75,21 @@ const LevelCard = ({
             <Text style={[styles.levelNumber, { color: levelColors[0] }]}>
               Level {level.level}
             </Text>
-            <Text style={[styles.levelName, { color: colors.text }]} numberOfLines={1}>
+            <TranslatableText style={[styles.levelName, { color: colors.text }]} numberOfLines={1}>
               {level.name}
-            </Text>
+            </TranslatableText>
           </View>
           {level.isUnlocked === false && (
             <Icon name="lock" size={20} color={colors.textSecondary} />
           )}
         </View>
 
-        <Text
+        <TranslatableText
           style={[styles.description, { color: colors.textSecondary }]}
           numberOfLines={2}
         >
           {level.description}
-        </Text>
+        </TranslatableText>
 
         <View style={styles.footer}>
           <View style={styles.quizInfo}>

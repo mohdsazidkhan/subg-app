@@ -9,6 +9,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
+import TranslatableText from './TranslatableText';
 import { useNavigation } from '@react-navigation/native';
 
 const TopPerformerCard = ({
@@ -125,9 +126,9 @@ const TopPerformerCard = ({
         </View>
 
         <TouchableOpacity onPress={goToProfile} activeOpacity={username ? 0.8 : 1}>
-          <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}> 
+          <TranslatableText style={[styles.name, { color: colors.text }]} numberOfLines={1}> 
             {performer?.name || 'Unknown'}
-          </Text>
+          </TranslatableText>
           <View style={[styles.subscriptionBadge, { backgroundColor: getSubscriptionColors(subscriptionName).bg }]}>
             <Text style={[styles.subscriptionText, { color: getSubscriptionColors(subscriptionName).text }]}>
               {subscriptionName}

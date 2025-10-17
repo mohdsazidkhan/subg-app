@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Login Screen Component
@@ -36,18 +37,20 @@ const LoginScreen = () => {
   const navigation = useNavigation();
   const { login, isLoading } = useAuth();
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const passwordRef = useRef(null);
 
   /**
    * Handle login form submission
    */
   const handleLogin = async () => {
     if (!identifier.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert(t('common.error'), t('errors.loadingFailed'));
       return;
     }
 
@@ -90,16 +93,16 @@ const LoginScreen = () => {
         {/* Login Form */}
         <View style={[styles.formContainer, { backgroundColor: colors.surface }]}>
           <Text style={[styles.welcomeText, { color: colors.text }]}>
-            Welcome Back! 🎯
+            {t('auth.welcomeBack')}
           </Text>
-          <Text style={[styles.subtitleText, { color: colors.textSecondary }]}>
-            Ready to continue your quiz journey?
+          <Text style={[styles.subtitleText, { color: colors.textSecondary }]}> 
+            {t('auth.readyJourney')}
           </Text>
 
           {/* Referral Code Input */}
           <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              Referral Code (Optional)
+            <Text style={[styles.label, { color: colors.text }]}> 
+              {t('auth.referralOptional')}
             </Text>
             <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
               <Icon name="tag" size={20} color={colors.textSecondary} style={styles.inputIcon} />
@@ -107,7 +110,7 @@ const LoginScreen = () => {
                 style={[styles.input, { color: colors.text }]}
                 value={referralCode}
                 onChangeText={setReferralCode}
-                placeholder="Enter referral code"
+                placeholder={t('auth.enterReferral')}
                 placeholderTextColor={colors.textSecondary}
                 autoCapitalize="characters"
                 maxLength={8}
@@ -129,16 +132,16 @@ const LoginScreen = () => {
           {/* Divider */}
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.textSecondary }]}>
-              or continue with email
+            <Text style={[styles.dividerText, { color: colors.textSecondary }]}> 
+              {t('auth.continueWithEmail')}
             </Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
           {/* Email/Phone Input */}
           <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              Email or Phone *
+            <Text style={[styles.label, { color: colors.text }]}> 
+              {t('auth.emailOrPhone')}
             </Text>
             <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
               <Icon name="email" size={20} color={colors.textSecondary} style={styles.inputIcon} />
@@ -146,18 +149,21 @@ const LoginScreen = () => {
                 style={[styles.input, { color: colors.text }]}
                 value={identifier}
                 onChangeText={setIdentifier}
-                placeholder="Enter your email or phone"
+                placeholder={t('auth.enterEmailOrPhone')}
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => passwordRef.current && passwordRef.current.focus()}
               />
             </View>
           </View>
 
           {/* Password Input */}
           <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              Password *
+            <Text style={[styles.label, { color: colors.text }]}> 
+              {t('auth.passwordRequiredStar')}
             </Text>
             <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
               <Icon name="lock" size={20} color={colors.textSecondary} style={styles.inputIcon} />
@@ -165,9 +171,12 @@ const LoginScreen = () => {
                 style={[styles.input, { color: colors.text }]}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Enter your password"
+                placeholder={t('auth.enterPassword')}
                 placeholderTextColor={colors.textSecondary}
                 secureTextEntry={!showPassword}
+                ref={passwordRef}
+                returnKeyType="done"
+                onSubmitEditing={handleLogin}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -187,8 +196,8 @@ const LoginScreen = () => {
             style={styles.forgotPassword}
             onPress={() => navigation.navigate('ForgotPassword')}
           >
-            <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
-              Forgot Password?
+            <Text style={[styles.forgotPasswordText, { color: colors.primary }]}> 
+              {t('auth.forgotPasswordShort')}
             </Text>
           </TouchableOpacity>
 
@@ -203,11 +212,11 @@ const LoginScreen = () => {
               style={styles.loginButtonGradient}
             >
               {isLoading ? (
-                <Text style={styles.loginButtonText}>Signing in...</Text>
+                <Text style={styles.loginButtonText}>{t('auth.signingIn')}</Text>
               ) : (
                 <>
                   <Icon name="login" size={20} color="white" />
-                  <Text style={styles.loginButtonText}>Sign In</Text>
+                  <Text style={styles.loginButtonText}>{t('auth.signIn')}</Text>
                 </>
               )}
             </LinearGradient>
@@ -216,14 +225,14 @@ const LoginScreen = () => {
 
           {/* Register Link */}
           <View style={styles.registerContainer}>
-            <Text style={[styles.registerText, { color: colors.textSecondary }]}>
-              Don't have an account?{' '}
+            <Text style={[styles.registerText, { color: colors.textSecondary }]}> 
+              {t('auth.noAccount')}{' '}
             </Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('Register')}
             >
-              <Text style={[styles.registerLink, { color: colors.primary }]}>
-                REGISTER
+              <Text style={[styles.registerLink, { color: colors.primary }]}> 
+                {t('auth.registerCta')}
               </Text>
             </TouchableOpacity>
           </View>

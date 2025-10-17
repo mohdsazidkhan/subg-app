@@ -29,14 +29,13 @@ const CategoryDetailScreen = () => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage } = useLanguage();
-
   const [category, setCategory] = useState(null);
   const [subCategories, setSubCategories] = useState([]);
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [startModalQuiz, setStartModalQuiz] = useState(null);
-
+  console.log(category, 'categorycategory')
   const categoryId = route.params?.categoryId;
 
   useEffect(() => {
@@ -101,7 +100,10 @@ const CategoryDetailScreen = () => {
   };
 
   const handleSubCategoryPress = (subCategory) => {
-    navigation.navigate('SubcategoryDetail', { subCategory });
+    navigation.navigate('SubcategoryDetail', {
+      subcategoryId: subCategory._id,
+      subCategory, // pass full object for header fallbacks
+    });
   };
 
   const handleQuizPress = (quiz) => {
@@ -153,7 +155,7 @@ const CategoryDetailScreen = () => {
       <View style={styles.quizContent}>
         <View style={styles.quizHeader}>
           <Text style={[styles.quizName, { color: colors.text }]} numberOfLines={2}>
-            {quiz.name}
+            {quiz.title}
           </Text>
           <View style={styles.quizBadges}>
             {quiz.isPremium && (
@@ -179,34 +181,66 @@ const CategoryDetailScreen = () => {
           <View style={styles.quizStat}>
             <Icon name="quiz" size={14} color={colors.textSecondary} />
             <Text style={[styles.quizStatText, { color: colors.textSecondary }]}>
-              {quiz.questionsCount || quiz.questionCount || quiz.totalMarks || (Array.isArray(quiz.questions) ? quiz.questions.length : 0)} questions
+              {quiz.questionCount || quiz?.questionsCount ||  (Array.isArray(quiz.questions) ? quiz.questions.length : 0)} questions
+            </Text>
+          </View>
+          <View style={styles.quizStat}>
+            <Icon name="quiz" size={14} color={colors.textSecondary} />
+            <Text style={[styles.quizStatText, { color: colors.textSecondary }]}>
+              {quiz.totalMarks ||  0} Marks
             </Text>
           </View>
           
           <View style={styles.quizStat}>
             <Icon name="timer" size={14} color={colors.textSecondary} />
             <Text style={[styles.quizStatText, { color: colors.textSecondary }]}>
-              {Math.round((quiz.timeLimit || 0) / 60)} min
-            </Text>
-          </View>
-
-          <View style={styles.quizStat}>
-            <Icon name="emoji-events" size={14} color={colors.textSecondary} />
-            <Text style={[styles.quizStatText, { color: colors.textSecondary }]}>
-              {quiz.points || 0} pts
+              {(quiz.timeLimit || 0)} min
             </Text>
           </View>
         </View>
       </View>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-        <Text style={{ fontSize: 12, color: colors.textSecondary }}>Category: {quiz.category?.name || category?.name || 'N/A'}</Text>
-        <Text style={{ fontSize: 12, color: colors.textSecondary }}>Subcategory: {quiz.subcategory?.name || 'N/A'}</Text>
-      </View>
+      <View
+  style={{
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    marginTop: 6,
+    paddingHorizontal: 10,
+    gap: 8,
+  }}
+>
+  <View
+    style={{
+      backgroundColor: '#FFE083', // soft yellow
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    }}
+  >
+    <Text style={{ fontSize: 12, color: '#4A3F00', fontWeight: '600' }}>
+      {quiz.category?.name || category?.name || 'N/A'}
+    </Text>
+  </View>
+
+  <View
+    style={{
+      backgroundColor: '#C5F3C1', // light green
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    }}
+  >
+    <Text style={{ fontSize: 12, color: '#1B4D1B', fontWeight: '600' }}>
+      {quiz.subcategory?.name || 'N/A'}
+    </Text>
+  </View>
+</View>
+
       <Button
         title={'Start Quiz'}
         onPress={() => setStartModalQuiz(quiz)}
         variant={'primary'}
-        style={{ marginTop: 12 }}
+        style={{ margin: 10 }}
       />
     </TouchableOpacity>
   );
@@ -233,7 +267,7 @@ const CategoryDetailScreen = () => {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
         <TopBar
-          title={category?.name || "Category"}
+          title={category?.name || t('navigation.categories')}
           showBackButton={true}
           showLanguageToggle={true}
           onBackPress={() => navigation.goBack()}
@@ -241,7 +275,7 @@ const CategoryDetailScreen = () => {
         />
         <Icon name="folder" size={60} color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.text }]}>
-          Loading category...
+          {t('common.loading')}
         </Text>
       </View>
     );
@@ -250,7 +284,7 @@ const CategoryDetailScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
-        title={category?.name || "Category"}
+        title={category?.name || t('navigation.categories')}
         showBackButton={true}
         showLanguageToggle={true}
         onBackPress={() => navigation.goBack()}
@@ -265,15 +299,15 @@ const CategoryDetailScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Category Header */}
-        <LinearGradient colors={colors.backgroundGradient} style={styles.header}>
-          <View style={styles.headerContent}>
-            <Icon name="folder" size={40} color="white" />
-            <Text style={styles.headerTitle}>{category?.name || "Category"}</Text>
-            <Text style={styles.headerSubtitle} numberOfLines={3}>
-              {category?.description || "Loading category description..."}
-            </Text>
+        {category && (
+          <View style={[styles.headerSection, { backgroundColor: colors.surface }]}> 
+            {category.description && (
+              <Text style={[styles.categoryDescription, { color: colors.textSecondary }]}> 
+                {category.description}
+              </Text>
+            )}
           </View>
-        </LinearGradient>
+        )}
 
         {/* Statistics */}
         <Card style={styles.statsCard}>
@@ -314,7 +348,7 @@ const CategoryDetailScreen = () => {
         {subCategories.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Subcategories ({subCategories.length})
+              {t('navigation.categories')} ({subCategories.length})
             </Text>
             
             <View style={styles.subCategoriesContainer}>
@@ -326,7 +360,7 @@ const CategoryDetailScreen = () => {
         {/* Quizzes */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Quizzes ({quizzes.length})
+            {t('navigation.quizzes')} ({quizzes.length})
           </Text>
           
           {quizzes.length > 0 ? (
@@ -338,10 +372,10 @@ const CategoryDetailScreen = () => {
               <View style={styles.emptyContent}>
                 <Icon name="quiz" size={48} color={colors.textSecondary} />
                 <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                  No Quizzes Available
+                  {t('home.noQuizzes')}
                 </Text>
-                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                  Check back later for new quizzes in this category!
+                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}> 
+                  {t('errors.noData')}
                 </Text>
               </View>
             </Card>
@@ -369,6 +403,14 @@ const styles = StyleSheet.create({
   centerContent: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  headerSection: {
+    padding: 20,
+    marginBottom: 16,
+  },
+  categoryDescription: {
+    fontSize: 16,
+    lineHeight: 24,
   },
   loadingText: {
     fontSize: 18,

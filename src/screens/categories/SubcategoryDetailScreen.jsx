@@ -11,6 +11,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
@@ -22,8 +23,8 @@ const SubcategoryDetailScreen = () => {
   const route = useRoute();
   const { colors } = useTheme();
   const { t } = useTranslation();
-
-  const [subcategory, setSubcategory] = useState(null);
+  const { currentLanguage, changeLanguage } = useLanguage();
+  const [headerNames, setHeaderNames] = useState({ subcategoryName: '', categoryName: '' });
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -32,45 +33,33 @@ const SubcategoryDetailScreen = () => {
   const [startModalQuiz, setStartModalQuiz] = useState(null);
 
   const subcategoryId = route.params?.subcategoryId || '';
+  const subcategory = route.params?.subCategory || '';
+  console.log(subcategory, 'subcategory')
 
   useEffect(() => {
-    fetchSubcategory();
     fetchQuizzes();
   }, [subcategoryId]);
-
-  const fetchSubcategory = async () => {
-    try {
-      // Try to get subcategory details from API
-      // Note: May need to implement getSubcategoryById in the API service
-      const response = await API.getCategories();
-      
-      // Fallback to get categories and find subcategory
-      // For now, we'll use a placeholder implementation
-      setSubcategory({
-        _id: subcategoryId,
-        name: 'Subcategory Details',
-        description: 'Quiz subcategory details',
-        categoryId: 'unknown',
-      });
-    } catch (error) {
-      console.error('Error fetching subcategory:', error);
-    }
-  };
 
   const fetchQuizzes = async (currentPage = 1) => {
     try {
       setLoading(true);
-
       if (currentPage === 1) {
         const response = await API.getLevelBasedQuizzes({
           subcategory: subcategoryId,
           page: currentPage,
           limit: 20,
         });
-
         if (response.success) {
-          setQuizzes(response.data || []);
+          const list = response.data || [];
+          setQuizzes(list);
           setHasMore(response.pagination?.hasNextPage || false);
+          if (list.length > 0) {
+            const first = list[0];
+            setHeaderNames({
+              subcategoryName: first?.subcategory?.name || headerNames.subcategoryName || subcategory?.name || '',
+              categoryName: first?.category?.name || headerNames.categoryName || '',
+            });
+          }
         } else {
           showMessage({
             message: 'Failed to load quizzes',
@@ -93,6 +82,11 @@ const SubcategoryDetailScreen = () => {
     setRefreshing(true);
     setPage(1);
     await fetchQuizzes(1);
+  };
+
+  const handleLanguageToggle = async () => {
+    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
+    await changeLanguage(newLanguage);
   };
 
   const handleQuizPress = (quiz) => {
@@ -187,10 +181,43 @@ const SubcategoryDetailScreen = () => {
             </View>
           )}
         </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Category: {quiz.category?.name || 'N/A'}</Text>
-          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Subcategory: {quiz.subcategory?.name || subcategory?.name || 'N/A'}</Text>
-        </View>
+        <View
+  style={{
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    paddingHorizontal: 10,
+    gap: 8,
+  }}
+>
+  <View
+    style={{
+      backgroundColor: '#FFE083', // soft yellow for category
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    }}
+  >
+    <Text style={{ fontSize: 12, color: '#4A3F00', fontWeight: '600' }}>
+      {quiz.category?.name || 'N/A'}
+    </Text>
+  </View>
+
+  <View
+    style={{
+      backgroundColor: '#C5F3C1', // light green for subcategory
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    }}
+  >
+    <Text style={{ fontSize: 12, color: '#1B4D1B', fontWeight: '600' }}>
+      {quiz.subcategory?.name || subcategory?.name || 'N/A'}
+    </Text>
+  </View>
+</View>
+
 
         <View style={{ marginTop: 10 }}>
           <TouchableOpacity onPress={() => setStartModalQuiz(quiz)} style={{ backgroundColor: colors.primary, paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}>
@@ -215,8 +242,11 @@ const SubcategoryDetailScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}> 
       <TopBar
-        title="Subcategory Detail"
+        title={subcategory?.name}
+        showBackButton={true}
         showMenuButton={false}
+        showLanguageToggle={true}
+        onLanguageToggle={handleLanguageToggle}
         onBackPress={() => navigation.goBack()}
       />
  
@@ -229,9 +259,6 @@ const SubcategoryDetailScreen = () => {
       >
         {subcategory && (
           <View style={[styles.headerSection, { backgroundColor: colors.surface }]}> 
-            <Text style={[styles.subcategoryName, { color: colors.text }]}>
-              {subcategory.name}
-            </Text>
             {subcategory.description && (
               <Text style={[styles.subcategoryDescription, { color: colors.textSecondary }]}> 
                 {subcategory.description}
@@ -242,7 +269,7 @@ const SubcategoryDetailScreen = () => {
  
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}> 
-            Available Quizzes ({quizzes.length})
+            {t('navigation.quizzes')} ({quizzes.length})
           </Text>
  
           {quizzes.length > 0 ? (
@@ -251,7 +278,7 @@ const SubcategoryDetailScreen = () => {
             <View style={styles.emptyState}>
               <Icon name="quiz" size={48} color={colors.textSecondary} />
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}> 
-                No quizzes available for this subcategory
+                {t('home.noQuizzes')}
               </Text>
             </View>
           )}

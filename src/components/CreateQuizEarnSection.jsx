@@ -17,7 +17,7 @@ const { width } = Dimensions.get('window');
  * CreateQuizEarnSection Component
  * 
  * Displays information about creating custom quizzes and earning subscription rewards.
- * Shows the process, milestone rewards, and requirements for pro users.
+ * Shows the process, milestone rewards, and requirements for all users.
  */
 
 const CreateQuizEarnSection = ({ onCreatePress, onMyQuizzesPress }) => {

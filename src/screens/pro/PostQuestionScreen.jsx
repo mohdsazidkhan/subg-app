@@ -307,7 +307,11 @@ const PostQuestionScreen = () => {
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}> 
             Tap on the option letter to mark it as correct
           </Text>
-          {options.map((_, index) => renderOption(index))}
+          {options.map((_, index) => (
+            <React.Fragment key={`option-${index}`}>
+              {renderOption(index)}
+            </React.Fragment>
+          ))}
         </Card>
 
         {/* Guidelines */}

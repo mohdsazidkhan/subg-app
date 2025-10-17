@@ -239,14 +239,14 @@ const SubscriptionScreen = () => {
       >
         {plan.isPopular && (
           <View style={[styles.popularBadge, { backgroundColor: colors.primary }]}>
-            <Text style={styles.popularText}>Most Popular</Text>
+            <Text style={styles.popularText}>{t('subscription.mostPopular')}</Text>
           </View>
         )}
 
         {isCurrentPlan && (
           <View style={[styles.currentBadge, { backgroundColor: colors.success }]}>
             <Icon name="check-circle" size={16} color="white" />
-            <Text style={styles.currentText}>Current Plan</Text>
+            <Text style={styles.currentText}>{t('subscription.currentPlan')}</Text>
           </View>
         )}
 
@@ -264,14 +264,14 @@ const SubscriptionScreen = () => {
           <Text style={[styles.planPrice, { color: colors.text }]}>
             ₹{plan.price}
           </Text>
-          <Text style={[styles.planDuration, { color: colors.textSecondary }]}>
-            / {plan.duration}
+          <Text style={[styles.planDuration, { color: colors.textSecondary }]}> 
+            / {t(`subscription.${(plan.duration || 'Monthly').toLowerCase()}`)}
           </Text>
         </View>
 
         <View style={styles.planFeatures}>
-          {plan.features.map((feature, index) => (
-            <View key={index} style={styles.feureItem}>
+          {plan.features.map((feature) => (
+            <View key={feature} style={styles.featureItem}>
               <Icon name="check" size={16} color={colors.success} />
               <Text style={[styles.featureText, { color: colors.text }]}>
                 {feature}
@@ -281,7 +281,7 @@ const SubscriptionScreen = () => {
         </View>
 
         <Button
-          title={isCurrentPlan ? 'Current Plan' : `Subscribe to ${plan.name}`}
+          title={isCurrentPlan ? t('subscription.currentPlan') : `${t('subscription.subscribeTo')} ${plan.name}`}
           onPress={() => handleSubscribe(plan._id)}
           variant={isCurrentPlan ? 'outline' : plan.isPopular ? 'primary' : 'secondary'}
           disabled={isCurrentPlan || subscribing}
@@ -325,9 +325,9 @@ const SubscriptionScreen = () => {
         <LinearGradient colors={colors.backgroundGradient} style={styles.header}>
           <View style={styles.headerContent}>
             <Icon name="card-membership" size={40} color="white" />
-            <Text style={styles.headerTitle}>Choose Your Plan</Text>
+            <Text style={styles.headerTitle}>{t('subscription.choosePlan')}</Text>
             <Text style={styles.headerSubtitle}>
-              Unlock premium features and enhance your learning experience
+              {t('subscription.unlockPremium')}
             </Text>
           </View>
         </LinearGradient>
@@ -338,8 +338,8 @@ const SubscriptionScreen = () => {
             <View style={styles.currentPlanContent}>
               <Icon name="person" size={24} color={colors.primary} />
               <View style={styles.currentPlanInfo}>
-                <Text style={[styles.currentPlanLabel, { color: colors.textSecondary }]}>
-                  Current Plan
+                <Text style={[styles.currentPlanLabel, { color: colors.textSecondary }]}> 
+                  {t('subscription.currentPlan')}
                 </Text>
                 <Text style={[styles.currentPlanValue, { color: colors.text }]}>
                   {user.subscriptionStatus?.toUpperCase() || 'FREE'}
@@ -448,6 +448,7 @@ const styles = StyleSheet.create({
   plansContainer: {
     paddingHorizontal: 20,
     marginBottom: 20,
+    gap: 10,
   },
   planCard: {
     marginBottom: 20,

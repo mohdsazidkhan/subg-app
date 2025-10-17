@@ -121,7 +121,7 @@ function HomeStackNavigator() {
 function QuestionsStackNavigator() {
   return (
     <QuestionsStack.Navigator screenOptions={{ headerShown: false }}>
-      <QuestionsStack.Screen name="QuestionsRoot" component={PublicQuestionsScreen} />
+      <QuestionsStack.Screen name="QuestionsRoot" component={PublicQuestionsScreen} options={{ headerShown: false }} />
     </QuestionsStack.Navigator>
   );
 }
@@ -129,9 +129,9 @@ function QuestionsStackNavigator() {
 function PostStackNavigator() {
   return (
     <PostStack.Navigator screenOptions={{ headerShown: false }}>
-      <PostStack.Screen name="PostRoot" component={PostQuestionScreen} />
-      <PostStack.Screen name="MyQuestions" component={MyQuestionsScreen} />
-      <PostStack.Screen name="CreateUserQuiz" component={CreateUserQuizScreen} />
+      <PostStack.Screen name="PostRoot" component={PostQuestionScreen} options={{ headerShown: false }} />
+      <PostStack.Screen name="MyQuestions" component={MyQuestionsScreen} options={{ headerShown: false }} />
+      <PostStack.Screen name="CreateUserQuiz" component={CreateUserQuizScreen} options={{ headerShown: false }} />
     </PostStack.Navigator>
   );
 }
@@ -139,7 +139,7 @@ function PostStackNavigator() {
 function SearchStackNavigator() {
   return (
     <SearchStack.Navigator screenOptions={{ headerShown: false }}>
-      <SearchStack.Screen name="SearchRoot" component={SearchScreen} />
+      <SearchStack.Screen name="SearchRoot" component={SearchScreen} options={{ headerShown: false }} />
     </SearchStack.Navigator>
   );
 }
@@ -147,7 +147,7 @@ function SearchStackNavigator() {
 function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
-      <ProfileStack.Screen name="ProfileRoot" component={ProfileScreen} />
+      <ProfileStack.Screen name="ProfileRoot" component={ProfileScreen} options={{ headerShown: false }} />
       <ProfileStack.Screen name="PublicProfile" component={PublicProfileScreen} />
       <ProfileStack.Screen name="FollowersList" component={FollowersListScreen} />
       <ProfileStack.Screen name="FollowingList" component={FollowingListScreen} />
@@ -159,7 +159,7 @@ function ProfileStackNavigator() {
 function MoreStackNavigator() {
   return (
     <MoreStack.Navigator screenOptions={{ headerShown: false }}>
-      <MoreStack.Screen name="MoreRoot" component={MoreScreen} />
+      <MoreStack.Screen name="MoreRoot" component={MoreScreen} options={{ headerShown: false }} />
       <MoreStack.Screen name="Subscription" component={SubscriptionScreen} />
       <MoreStack.Screen name="HowItWorks" component={HowItWorksScreen} />
       <MoreStack.Screen name="AboutUs" component={AboutUsScreen} />
@@ -213,8 +213,13 @@ function MainTabs() {
   
   // Check if user can create quiz/question
   const canCreate = useCallback(() => {
-    // Only pro users with active subscription can create
-    if (!user || user?.subscriptionStatus !== 'pro') {
+    // Any user with active paid subscription can create
+    if (!user || !user?.subscriptionStatus) {
+      return false;
+    }
+    
+    const paidPlans = ['basic', 'premium', 'pro'];
+    if (!paidPlans.includes(user.subscriptionStatus.toLowerCase())) {
       return false;
     }
     
