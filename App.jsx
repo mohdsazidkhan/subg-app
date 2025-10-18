@@ -98,28 +98,6 @@ function App(){
       </GestureHandlerRootView>
     </ErrorBoundary>
   );
-  return (
-    <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider>
-        <NetworkProvider>
-          <LanguageProvider>
-            <ThemeProvider>
-              <AuthProvider>
-                <NavigationContainer>
-                  <StatusBar 
-                    barStyle={isDarkMode ? 'light-content' : 'dark-content'} 
-                    backgroundColor={isDarkMode ? '#1a1a1a' : '#ffffff'}
-                  />
-                  <AppNavigator />
-                  <FlashMessage position="top" />
-                </NavigationContainer>
-              </AuthProvider>
-            </ThemeProvider>
-          </LanguageProvider>
-        </NetworkProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
-  );
 }
 
 const styles = StyleSheet.create({
