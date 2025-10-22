@@ -30,7 +30,7 @@ const LevelsScreen = () => {
   const fetchLevels = async () => {
     try {
       setLoading(true);
-      const response = await API.getLevels();
+      const response = await API.getAllLevels();
       
       if (response.success) {
         setLevels(response.data || []);

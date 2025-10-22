@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
@@ -20,14 +22,76 @@ const ProfileScreen = () => {
   const { user, logout } = useAuth();
   const { colors, toggleTheme } = useTheme();
   
-  
-
-  const [profileStats] = useState({
-    quizzesCompleted: 25,
-    totalScore: 1850,
-    rank: 47,
-    achievements: 8,
+  const [profileStats, setProfileStats] = useState({
+    quizzesCompleted: 0,
+    totalScore: 0,
+    rank: 0,
+    achievements: 0,
   });
+  const [playedQuizzes, setPlayedQuizzes] = useState([]);
+  const [bankDetails, setBankDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch profile data
+      const profileRes = await API.getProfile();
+      if (profileRes.success && profileRes.user) {
+        // Update profile stats from user data
+        setProfileStats({
+          quizzesCompleted: profileRes.user.totalQuizzes || 0,
+          totalScore: profileRes.user.totalScore || 0,
+          rank: profileRes.user.rank || 0,
+          achievements: profileRes.user.badges?.length || 0,
+        });
+      }
+
+      // Fetch quiz history
+      try {
+        const historyRes = await API.getStudentQuizHistory();
+        if (historyRes.success) {
+          setPlayedQuizzes(historyRes.data?.attempts || []);
+        }
+      } catch (quizErr) {
+        console.error('Error fetching quiz history:', quizErr);
+        setPlayedQuizzes([]);
+      }
+
+      // Fetch bank details if user is eligible
+      if (isEligibleForBankDetails()) {
+        try {
+          const bankRes = await API.getBankDetails();
+          if (bankRes.success && bankRes.bankDetail) {
+            setBankDetails(bankRes.bankDetail);
+          }
+        } catch (bankErr) {
+          console.error('Error fetching bank details:', bankErr);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchProfileData();
+    setRefreshing(false);
+  };
+
+  const isEligibleForBankDetails = () => {
+    // Check if user has completed enough quizzes or has pro status
+    return user?.totalQuizzes >= 10 || user?.subscriptionStatus === 'pro';
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -102,7 +166,13 @@ const ProfileScreen = () => {
         onThemeToggle={toggleTheme}
       />
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Profile Header */}
         <Card style={styles.profileHeader}>
           <View style={styles.avatarContainer}>

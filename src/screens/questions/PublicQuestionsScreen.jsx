@@ -198,7 +198,7 @@ const PublicQuestionsScreen = () => {
         <View style={styles.questionStats}>
           <View style={styles.statItem}>
             <Icon name="visibility" size={14} color={colors.textSecondary} />
-            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.viewsCount}</Text>
+            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.viewsCount || 0}</Text>
           </View>
           <View style={styles.statItem}>
             <Icon name="reply" size={14} color={colors.textSecondary} />
@@ -210,7 +210,7 @@ const PublicQuestionsScreen = () => {
               size={14}
               color={question.isLiked ? colors.error : colors.textSecondary}
             />
-            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.likesCount}</Text>
+            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.likesCount || 0}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -339,10 +339,10 @@ const PublicQuestionsScreen = () => {
       <TopBar
         title="Community Questions"
         showMenuButton={true}
-        showLanguageToggle={true}
+        
         showThemeToggle={true}
         onMenuPress={() => navigation.navigate('MainTabs', { screen: 'More' })}
-        onLanguageToggle={handleLanguageToggle}
+        
         onThemeToggle={toggleTheme}
       />
 

@@ -113,7 +113,7 @@ const BottomSheetCreate = ({ visible, onClose, onCreateQuiz, onPostQuestion }) =
               <Icon name="library-books" size={24} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Create Quiz</Text>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Post Quiz</Text>
               <Text style={{ fontSize: 13, color: colors.textSecondary }}>
                 Design custom quizzes and earn rewards
               </Text>

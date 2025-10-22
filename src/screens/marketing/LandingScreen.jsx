@@ -114,7 +114,7 @@ const LandingScreen = () => {
         const [levelsRes, categoriesRes, statsRes] = await Promise.all([
           API.getAllLevels(),
           API.getPublicCategoriesEnhanced(),
-          API.getPublicLandingStats(),
+          API.getPublicLandingStats()
         ]);
 
         // Update with real data if successful
@@ -434,7 +434,7 @@ const LandingScreen = () => {
       <TopBar
         title="Get Started"
         showBackButton={false}
-        showLanguageToggle={true}
+        
         showThemeToggle={true}
         onLanguageToggle={() => changeLanguage(currentLanguage === 'en' ? 'hi' : 'en')}
         onThemeToggle={toggleTheme}

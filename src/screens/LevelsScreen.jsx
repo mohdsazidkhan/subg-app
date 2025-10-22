@@ -76,7 +76,7 @@ const LevelsScreen = () => {
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Quizzes Required</Text>
-          <Text style={styles.statValue}>{item.quizzesRequired}</Text>
+          <Text style={styles.statValue}>{item.quizzesRequired || 0}</Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Users</Text>

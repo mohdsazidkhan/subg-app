@@ -315,9 +315,9 @@ class ApiService {
    * @param {Object} params - Query parameters
    * @returns {Promise<any>} Quiz history
    */
-  async getQuizHistory(params = {}) {
+  async getStudentQuizHistory(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.request(`/api/levels/history?${queryString}`);
+    return this.request(`/api/student/quiz-history?${queryString}`);
   }
 
   // ===== SEARCH ENDPOINTS =====
@@ -457,6 +457,10 @@ class ApiService {
     return this.request(`/api/public/monthly-leaderboard?${queryString}`);
   }
 
+  async getPublicLeaderboard() {
+    return this.request('/api/public/leaderboard');
+  }
+
   async getPublicLandingStats() {
     return this.request('/api/public/landing-stats');
   }
@@ -512,23 +516,23 @@ class ApiService {
     });
   }
 
-  async getCurrentMonthQuestionCount() {
+  async getCurrentMonthQuestionCount(userId) {
     // Backend route is '/api/userQuestions/monthly-count'
     // previous path 'current-month-count' accidentally matched the '/userQuestions/:id' route
     // resulting in Invalid id errors. Use the correct endpoint.
-    return this.request('/api/userQuestions/monthly-count');
+    return this.request(`/api/userQuestions/monthly-count/${userId}`);
   }
 
-  async getCurrentDayQuestionCount() {
-    return this.request('/api/userQuestions/daily-count');
+  async getCurrentDayQuestionCount(userId) {
+    return this.request(`/api/userQuestions/daily-count/${userId}`);
   }
 
-  async getMyUserQuestions(params) {
+  async getMyUserQuestions(params = {}) {
     const queryString = new URLSearchParams(params).toString();
     return this.request(`/api/userQuestions/mine/list?${queryString}`);
   }
 
-  async getPublicUserQuestions(params) {
+  async getPublicUserQuestions(params = {}) {
     const queryString = new URLSearchParams(params).toString();
     return this.request(`/api/userQuestions/public/list?${queryString}`);
   }
@@ -574,7 +578,7 @@ class ApiService {
   }
 
   // ===== ARTICLES ENDPOINTS =====
-  async getPublishedArticles(params) {
+  async getPublishedArticles(params = {}) {
     const queryString = new URLSearchParams(params).toString();
     return this.request(`/api/public/articles?${queryString}`);
   }
@@ -592,7 +596,7 @@ class ApiService {
     return this.request('/api/public/articles/categories');
   }
 
-  async getArticlesByCategory(categoryId, params) {
+  async getArticlesByCategory(categoryId, params = {}) {
     const queryString = new URLSearchParams({ category: categoryId, ...params }).toString();
     return this.request(`/api/public/articles?${queryString}`);
   }
@@ -601,7 +605,7 @@ class ApiService {
     return this.request('/api/public/articles/tags');
   }
 
-  async getArticlesByTag(tag, params) {
+  async getArticlesByTag(tag, params = {}) {
     const queryString = new URLSearchParams({ tag, ...params }).toString();
     return this.request(`/api/public/articles?${queryString}`);
   }
@@ -681,33 +685,39 @@ class ApiService {
     return this.request('/api/student/notifications/clear-all', { method: 'DELETE' });
   }
 
+  async markAllNotificationsRead() {
+    return this.request('/api/student/notifications/mark-all-read', {
+      method: 'PUT'
+    });
+  }
+
   // ===== ANALYTICS ENDPOINTS =====
   async getAnalyticsDashboard() {
     return this.request('/api/analytics/dashboard');
   }
 
-  async getUserAnalytics(params) {
+  async getUserAnalytics(params = {}) {
     return this.request('/api/analytics/user', {
       method: 'GET',
       body: JSON.stringify(params),
     });
   }
 
-  async getQuizAnalytics(params) {
+  async getQuizAnalytics(params = {}) {
     return this.request('/api/analytics/quiz', {
       method: 'GET',
       body: JSON.stringify(params),
     });
   }
 
-  async getFinancialAnalytics(params) {
+  async getFinancialAnalytics(params = {}) {
     return this.request('/api/analytics/financial', {
       method: 'GET',
       body: JSON.stringify(params),
     });
   }
 
-  async getPerformanceAnalytics(params) {
+  async getPerformanceAnalytics(params = {}) {
     return this.request('/api/analytics/performance', {
       method: 'GET',
       body: JSON.stringify(params),
@@ -719,26 +729,97 @@ class ApiService {
     return this.request(endpoint);
   }
 
-  async getIndividualUserAnalytics(userId, params) {
+  async getIndividualUserAnalytics(userId, params = {}) {
     return this.request(`/api/analytics/user/${userId}`, {
       method: 'GET',
       body: JSON.stringify(params),
     });
   }
 
-  // ===== ADMIN ENDPOINTS =====
+  // ===== MONTHLY REWARDS =====
+  async getMonthlyRewardInfo() {
+    return this.request('/api/levels/monthly-rewards');
+  }
+
+  // ===== PAYMENT DATA =====
+  async getPaymentData(txnid) {
+    return this.request(`/api/subscription/payment-data/${txnid}`);
+  }
+  async getQuizQuestions(quizId) {
+    return this.request(`/api/student/quizzes/${quizId}/questions`);
+  }
+  async getApprovedCategories() {
+    return this.request('/api/proUser/category/approved');
+  }
+
+  async getApprovedSubcategories(categoryId) {
+    return this.request(`/api/proUser/subcategory/approved?categoryId=${categoryId}`);
+  }
+
+  async createUserQuiz(data) {
+    return this.request('/api/proUser/quiz/create', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
+
+  async getUserQuizzes(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/api/proUser/quiz/mine${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Alias for components expecting getMyQuizzes()
+  async getMyQuizzes(params = {}) {
+    return this.getUserQuizzes(params);
+  }
+
+  async getUserQuizDetails(id) {
+    return this.request(`/api/proUser/public/quiz/${id}`);
+  }
+
+  async getMyQuiz(id) {
+    return this.request(`/api/proUser/quiz/${id}`);
+  }
+
+  async updateUserQuiz(id, data) {
+    return this.request(`/api/proUser/quiz/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
+
+  async deleteUserQuiz(id) {
+    return this.request(`/api/proUser/quiz/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Pro User Quiz Statistics
+  async getQuizCreationStats() {
+    return this.request('/api/proUser/stats/creation');
+  }
+
+  async getMonthlyQuizCount() {
+    return this.request('/api/proUser/stats/monthly-count');
+  }
   async getAdminStats() {
     return this.request('/api/admin/stats');
   }
 
-  async adminGetUserWallets(params) {
+  async adminGetUserWallets(params = {}) {
     return this.request('/api/admin/user-wallets', {
       method: 'GET',
       body: JSON.stringify(params),
     });
   }
 
-  async getAdminCategories(params) {
+  async getAdminCategories(params = {}) {
     return this.request('/api/admin/categories', {
       method: 'GET',
       body: JSON.stringify(params),
@@ -765,7 +846,7 @@ class ApiService {
     });
   }
 
-  async getAdminSubcategories(params) {
+  async getAdminSubcategories(params = {}) {
     return this.request('/api/admin/subcategories', {
       method: 'GET',
       body: JSON.stringify(params),
@@ -792,14 +873,14 @@ class ApiService {
     });
   }
 
-  async getAdminQuizzes(params) {
+  async getAdminQuizzes(params = {}) {
     return this.request('/api/admin/quizzes', {
       method: 'GET',
       body: JSON.stringify(params),
     });
   }
 
-  async getAdminAllQuizzes(params) {
+  async getAdminAllQuizzes(params = {}) {
     return this.request('/api/admin/quizzes/all', {
       method: 'GET',
       body: JSON.stringify(params),
@@ -826,7 +907,7 @@ class ApiService {
     });
   }
 
-  async getAdminQuestions(params) {
+  async getAdminQuestions(params = {}) {
     return this.request('/api/admin/questions', {
       method: 'GET',
       body: JSON.stringify(params),
@@ -853,7 +934,7 @@ class ApiService {
     });
   }
 
-  async getAdminStudents(params) {
+  async getAdminStudents(params = {}) {
     return this.request('/api/admin/students', {
       method: 'GET',
       body: JSON.stringify(params),
@@ -873,7 +954,7 @@ class ApiService {
     });
   }
 
-  async getAdminContacts(params) {
+  async getAdminContacts(params = {}) {
     return this.request('/api/admin/contacts', {
       method: 'GET',
       body: JSON.stringify(params),
@@ -893,21 +974,21 @@ class ApiService {
     });
   }
 
-  async getAdminBankDetails(params) {
+  async getAdminBankDetails(params = {}) {
     return this.request('/api/admin/bank-details', {
       method: 'GET',
       body: JSON.stringify(params),
     });
   }
 
-  async getAdminPaymentTransactions(params) {
+  async getAdminPaymentTransactions(params = {}) {
     return this.request('/api/admin/payment-transactions', {
       method: 'GET',
       body: JSON.stringify(params),
     });
   }
 
-  async getAdminTransactionSummary(params) {
+  async getAdminTransactionSummary(params = {}) {
     return this.request('/api/admin/transaction-summary', {
       method: 'GET',
       body: JSON.stringify(params),
@@ -918,14 +999,14 @@ class ApiService {
     return this.request('/api/admin/transaction-filter-options');
   }
 
-  async getAdminSubscriptions(params) {
+  async getAdminSubscriptions(params = {}) {
     return this.request('/api/admin/subscriptions', {
       method: 'GET',
       body: JSON.stringify(params),
     });
   }
 
-  async getAdminSubscriptionSummary(params) {
+  async getAdminSubscriptionSummary(params = {}) {
     return this.request('/api/admin/subscription-summary', {
       method: 'GET',
       body: JSON.stringify(params),
@@ -936,7 +1017,7 @@ class ApiService {
     return this.request('/api/admin/subscription-filter-options');
   }
 
-  async getAdminArticles(params) {
+  async getAdminArticles(params = {}) {
     return this.request('/api/admin/articles', {
       method: 'GET',
       body: JSON.stringify(params),
@@ -995,7 +1076,7 @@ class ApiService {
     return this.request('/api/admin/articles/stats');
   }
 
-  async searchArticles(query, params) {
+  async searchArticles(query, params = {}) {
     return this.request('/api/articles/search', {
       method: 'GET',
       body: JSON.stringify({ query, ...params }),
@@ -1014,7 +1095,7 @@ class ApiService {
     });
   }
 
-  async adminGetUserQuestions(params) {
+  async adminGetUserQuestions(params = {}) {
     return this.request('/api/admin/user-questions', {
       method: 'GET',
       body: JSON.stringify(params),
@@ -1028,7 +1109,7 @@ class ApiService {
     });
   }
 
-  async adminGetWithdrawRequests(params) {
+  async adminGetWithdrawRequests(params = {}) {
     return this.request('/api/admin/withdraw-requests', {
       method: 'GET',
       body: JSON.stringify(params),

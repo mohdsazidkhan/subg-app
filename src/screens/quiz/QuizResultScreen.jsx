@@ -111,9 +111,9 @@ const QuizResultScreen = () => {
         <TopBar
           title="Quiz Result"
           showBackButton={true}
-          showLanguageToggle={true}
+          
           onBackPress={navigation.goBack}
-          onLanguageToggle={handleLanguageToggle}
+          
         />
         <Icon name="error" size={60} color={colors.error} />
         <Text style={[styles.errorText, { color: colors.text }]}>
@@ -131,9 +131,9 @@ const QuizResultScreen = () => {
       <TopBar
         title="Quiz Result"
         showBackButton={true}
-        showLanguageToggle={true}
+        
         onBackPress={navigation.goBack}
-        onLanguageToggle={handleLanguageToggle}
+        
       />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>

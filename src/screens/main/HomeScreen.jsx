@@ -28,6 +28,7 @@ import TopPerformerCard from '../../components/TopPerformerCard';
 import LegendCard from '../../components/LegendCard';
 import BlogCard from '../../components/BlogCard';
 import AddQuestionSection from '../../components/AddQuestionSection';
+import AddQuestionEarnSection from '../../components/AddQuestionEarnSection';
 import ReferralSection from '../../components/ReferralSection';
 import NetworkStatusIndicator from '../../components/NetworkStatusIndicator';
 import OfflineFallback from '../../components/OfflineFallback';
@@ -192,9 +193,30 @@ const HomeScreen = () => {
 
   const fetchTopPerformers = async () => {
     try {
-      const response = await API.getPublicTopPerformersMonthly(10, user?._id);
+      const response = await API.getPublicLandingTopPerformers(10);
       if (response.success) {
-        setTopPerformers(response.data.top);
+        // Sort the top performers using the same logic as Performance Analytics
+        const sortedTopPerformers = response.data.sort((a, b) => {
+          // First priority: High Score Wins (descending)
+          const aHighScore = a.highQuizzes || 0;
+          const bHighScore = b.highQuizzes || 0;
+          if (aHighScore !== bHighScore) {
+            return bHighScore - aHighScore;
+          }
+          
+          // Second priority: Accuracy (descending)
+          const aAccuracy = a.accuracy || 0;
+          const bAccuracy = b.accuracy || 0;
+          if (aAccuracy !== bAccuracy) {
+            return bAccuracy - aAccuracy;
+          }
+          
+          // Third priority: Total quizzes played (descending)
+          const aTotalQuizzes = a.totalQuizzes || 0;
+          const bTotalQuizzes = b.totalQuizzes || 0;
+          return bTotalQuizzes - aTotalQuizzes;
+        });
+        setTopPerformers(sortedTopPerformers);
       }
     } catch (error) {
       console.error('Error fetching top performers:', error);
@@ -245,13 +267,26 @@ const HomeScreen = () => {
         const response = await API.getCurrentMonthQuestionCount(user._id);
         console.log('fetchCurrentMonthQuestionCount', response);
         if (response.success) {
-          const data = response.data || 0;
-          setCurrentMonthQuestionCount({
-            currentCount: data,
-            limit: 100,
-            remaining: Math.max(0, 100 - data),
-            canAddMore: data < 100,
-          });
+          // Handle both cases: when data is a number or an object
+          const data = response.data;
+          if (typeof data === 'object' && data !== null) {
+            // If data is an object with the expected structure
+            setCurrentMonthQuestionCount({
+              currentCount: data.currentCount || 0,
+              limit: data.limit || 100,
+              remaining: data.remaining || Math.max(0, (data.limit || 100) - (data.currentCount || 0)),
+              canAddMore: data.canAddMore !== undefined ? data.canAddMore : (data.currentCount || 0) < (data.limit || 100),
+            });
+          } else {
+            // If data is a simple number (legacy format)
+            const count = data || 0;
+            setCurrentMonthQuestionCount({
+              currentCount: count,
+              limit: 100,
+              remaining: Math.max(0, 100 - count),
+              canAddMore: count < 100,
+            });
+          }
         }
       } else {
         // Set default values when user is not available
@@ -583,9 +618,10 @@ const HomeScreen = () => {
           onPress={() => navigation.navigate('Profile')}
         />
 
-        {/* Add Question Section */}
-        <AddQuestionSection
+        {/* Add Question & Earn Section (mirrors Create Custom Quiz design) */}
+        <AddQuestionEarnSection
           onPress={() => navigation.navigate('PostQuestion')}
+          onMyQuestionsPress={() => navigation.navigate('PostQuestion', { screen: 'MyQuestions' })}
           isProUser={hasActiveSubscription()}
           currentMonthCount={currentMonthQuestionCount}
         />

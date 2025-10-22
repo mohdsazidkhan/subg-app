@@ -187,9 +187,9 @@ const CategoryDetailScreen = () => {
         <TopBar
           title="Category"
           showBackButton={true}
-          showLanguageToggle={true}
+          
           onBackPress={() => navigation.goBack()}
-          onLanguageToggle={handleLanguageToggle}
+          
         />
         <Icon name="error" size={60} color={colors.error} />
         <Text style={[styles.errorText, { color: colors.text }]}>
@@ -205,9 +205,9 @@ const CategoryDetailScreen = () => {
         <TopBar
           title={category?.name || "Category"}
           showBackButton={true}
-          showLanguageToggle={true}
+          
           onBackPress={() => navigation.goBack()}
-          onLanguageToggle={handleLanguageToggle}
+          
         />
         <Icon name="folder" size={60} color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.text }]}>
@@ -222,9 +222,9 @@ const CategoryDetailScreen = () => {
       <TopBar
         title={category?.name || "Category"}
         showBackButton={true}
-        showLanguageToggle={true}
+        
         onBackPress={() => navigation.goBack()}
-        onLanguageToggle={handleLanguageToggle}
+        
       />
 
       <ScrollView

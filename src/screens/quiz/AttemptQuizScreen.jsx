@@ -74,13 +74,13 @@ const AttemptQuizScreen = () => {
   const fetchQuizQuestions = async () => {
     try {
       setLoading(true);
-      const response = await API.getQuizQuestions(quiz._id);
+      const response = await API.getQuizById(quiz._id);
       
       if (response.success) {
-        setQuestions(response.results || []);
+        setQuestions(response.questions || []);
         // Set timer if quiz has time limit
-        if (quiz.timeLimit && quiz.timeLimit > 0) {
-          setTimeRemaining(quiz.timeLimit * 60); // Convert minutes to seconds
+        if (response.timeLimit && response.timeLimit > 0) {
+          setTimeRemaining(response.timeLimit * 60); // Convert minutes to seconds
         }
       }
     } catch (error) {
@@ -95,10 +95,7 @@ const AttemptQuizScreen = () => {
     }
   };
 
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
-  };
+  
 
   const handleAnswerSelect = (questionId, answerIndex) => {
     setAnswers(prev => ({
@@ -196,8 +193,8 @@ const AttemptQuizScreen = () => {
         <TopBar
           title="Quiz"
           showBackButton={false}
-          showLanguageToggle={true}
-          onLanguageToggle={handleLanguageToggle}
+          
+          
         />
         <Icon name="quiz" size={60} color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.text }]}>
@@ -213,8 +210,8 @@ const AttemptQuizScreen = () => {
         <TopBar
           title="Quiz"
           showBackButton={false}
-          showLanguageToggle={true}
-          onLanguageToggle={handleLanguageToggle}
+          
+          
         />
         <Icon name="error" size={60} color={colors.error} />
         <Text style={[styles.errorText, { color: colors.text }]}>
@@ -238,8 +235,8 @@ const AttemptQuizScreen = () => {
       <TopBar
         title={quiz.name}
         showBackButton={false}
-        showLanguageToggle={true}
-        onLanguageToggle={handleLanguageToggle}
+        
+        
         rightComponent={
           quiz.timeLimit ? (
             <View style={styles.timer}>

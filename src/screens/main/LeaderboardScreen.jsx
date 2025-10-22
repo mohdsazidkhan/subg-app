@@ -36,7 +36,7 @@ const LeaderboardScreen = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const response = await API.getLeaderboard({ category: selectedCategory });
+      const response = await API.getPublicLeaderboard();
       
       if (response.success) {
         setLeaderboardData(response.data || []);

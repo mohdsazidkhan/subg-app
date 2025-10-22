@@ -84,10 +84,7 @@ const LevelDetailScreen = () => {
     setRefreshing(false);
   };
 
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
-  };
+  
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty?.toLowerCase()) {
@@ -198,9 +195,9 @@ const LevelDetailScreen = () => {
         <TopBar
           title="Level Details"
           showBackButton={true}
-          showLanguageToggle={true}
+          
           onBackPress={() => navigation.goBack()}
-          onLanguageToggle={handleLanguageToggle}
+          
         />
         <Icon name="star" size={60} color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
@@ -214,9 +211,9 @@ const LevelDetailScreen = () => {
         <TopBar
           title="Level Details"
           showBackButton={true}
-          showLanguageToggle={true}
+          
           onBackPress={() => navigation.goBack()}
-          onLanguageToggle={handleLanguageToggle}
+          
         />
         <Icon name="error" size={60} color={colors.error} />
         <Text style={[styles.errorText, { color: colors.text }]}>
@@ -232,9 +229,9 @@ const LevelDetailScreen = () => {
       <TopBar
         title={`Level ${level.level}`}
         showBackButton={true}
-        showLanguageToggle={true}
+        
         onBackPress={() => navigation.goBack()}
-        onLanguageToggle={handleLanguageToggle}
+        
       />
 
       <ScrollView

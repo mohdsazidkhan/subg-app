@@ -18,7 +18,7 @@ const QuizHistoryScreen = () => {
   const loadAttempts = async () => {
     try {
       setLoading(true);
-      const res = await API.getQuizHistory();
+      const res = await API.getStudentQuizHistory();
       const payload = res?.data || res;
       
       setAttempts(payload.attempts || payload.items || []);

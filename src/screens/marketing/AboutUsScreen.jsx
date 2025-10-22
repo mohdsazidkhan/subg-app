@@ -85,9 +85,9 @@ const AboutUsScreen = () => {
       <TopBar
         title="About Us"
         showBackButton={true}
-        showLanguageToggle={true}
+        
         onBackPress={() => navigation.goBack()}
-        onLanguageToggle={handleLanguageToggle}
+        
       />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>

@@ -33,7 +33,7 @@ const NotificationsScreen = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await API.getNotifications();
+      const response = await API.getStudentNotifications();
       
       if (response.success) {
         setNotifications(response.data || []);
@@ -59,7 +59,7 @@ const NotificationsScreen = () => {
     try {
       // Mark notification as read
       if (!notification.isRead) {
-        await API.markNotificationRead(notification._id);
+        await API.markNotificationAsRead(notification._id);
         setNotifications(prev =>
           prev.map(notif =>
             notif._id === notification._id ? { ...notif, isRead: true } : notif

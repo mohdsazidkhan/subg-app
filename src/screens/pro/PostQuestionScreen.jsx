@@ -15,6 +15,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
@@ -42,12 +43,13 @@ import Card from '../../components/Card';
 const PostQuestionScreen = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
-  
-  
+  const { user } = useAuth();
 
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '', '', '']);
   const [correctAnswer, setCorrectAnswer] = useState(null);
+  const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [questionCount, setQuestionCount] = useState({
     currentCount: 0,
@@ -65,28 +67,112 @@ const PostQuestionScreen = () => {
   useEffect(() => {
     fetchCurrentMonthQuestionCount();
     fetchCurrentDayQuestionCount();
+    fetchCategories();
   }, []);
 
 
   const fetchCurrentMonthQuestionCount = async () => {
     try {
-      const response = await API.getCurrentMonthQuestionCount();
-      if (response.success) {
-        setQuestionCount(response.data);
+      if (user && user._id) {
+        const response = await API.getCurrentMonthQuestionCount(user._id);
+        if (response.success) {
+          // Handle both cases: when data is a number or an object
+          const data = response.data;
+          if (typeof data === 'object' && data !== null) {
+            // If data is an object with the expected structure
+            setQuestionCount({
+              currentCount: data.currentCount || 0,
+              limit: data.limit || 100,
+              remaining: data.remaining || Math.max(0, (data.limit || 100) - (data.currentCount || 0)),
+              canAddMore: data.canAddMore !== undefined ? data.canAddMore : (data.currentCount || 0) < (data.limit || 100),
+            });
+          } else {
+            // If data is a simple number (legacy format)
+            const count = data || 0;
+            setQuestionCount({
+              currentCount: count,
+              limit: 100,
+              remaining: Math.max(0, 100 - count),
+              canAddMore: count < 100,
+            });
+          }
+        }
+      } else {
+        // Set default values when user is not available
+        setQuestionCount({
+          currentCount: 0,
+          limit: 100,
+          remaining: 100,
+          canAddMore: true,
+        });
       }
     } catch (error) {
       console.error('Error fetching current month question count:', error);
+      // Set default values on error
+      setQuestionCount({
+        currentCount: 0,
+        limit: 100,
+        remaining: 100,
+        canAddMore: true,
+      });
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await API.getPublicCategories();
+      if (response.success) {
+        setCategories(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
     }
   };
 
   const fetchCurrentDayQuestionCount = async () => {
     try {
-      const response = await API.getCurrentDayQuestionCount();
-      if (response.success) {
-        setDailyCount(response.data);
+      if (user && user._id) {
+        const response = await API.getCurrentDayQuestionCount(user._id);
+        if (response.success) {
+          // Handle both cases: when data is a number or an object
+          const data = response.data;
+          if (typeof data === 'object' && data !== null) {
+            // If data is an object with the expected structure
+            setDailyCount({
+              currentCount: data.currentCount || 0,
+              limit: data.limit || 5,
+              remaining: data.remaining || Math.max(0, (data.limit || 5) - (data.currentCount || 0)),
+              canAddMore: data.canAddMore !== undefined ? data.canAddMore : (data.currentCount || 0) < (data.limit || 5),
+            });
+          } else {
+            // If data is a simple number (legacy format)
+            const count = data || 0;
+            setDailyCount({
+              currentCount: count,
+              limit: 5,
+              remaining: Math.max(0, 5 - count),
+              canAddMore: count < 5,
+            });
+          }
+        }
+      } else {
+        // Set default values when user is not available
+        setDailyCount({
+          currentCount: 0,
+          limit: 5,
+          remaining: 5,
+          canAddMore: true,
+        });
       }
     } catch (error) {
       console.error('Error fetching current day question count:', error);
+      // Set default values on error
+      setDailyCount({
+        currentCount: 0,
+        limit: 5,
+        remaining: 5,
+        canAddMore: true,
+      });
     }
   };
 
@@ -122,6 +208,11 @@ const PostQuestionScreen = () => {
       return false;
     }
 
+    if (!category) {
+      Alert.alert('Error', 'Please select a category');
+      return false;
+    }
+
     if (options.some(option => !option.trim())) {
       Alert.alert('Error', 'Please fill in all options');
       return false;
@@ -143,7 +234,8 @@ const PostQuestionScreen = () => {
       const payload = {
         question: question.trim(),
         options: options.map(opt => opt.trim()),
-        correctAnswer
+        correctAnswer,
+        category
       };
 
       const response = await API.createUserQuestion(payload);
@@ -264,10 +356,10 @@ const PostQuestionScreen = () => {
           {/* Daily Question Count */}
           <View style={[styles.questionCountContainer, { backgroundColor: colors.surface }]}> 
             <Text style={[styles.questionCountText, { color: colors.text }]}> 
-              Daily Progress: {dailyCount.currentCount}/{dailyCount.limit}
+              Daily Progress: {dailyCount.currentCount || 0}/{dailyCount.limit || 5}
             </Text>
             <Text style={[styles.questionCountSubtext, { color: colors.textSecondary }]}> 
-              {dailyCount.remaining} questions remaining today
+              {dailyCount.remaining || 0} questions remaining today
             </Text>
             {!dailyCount.canAddMore && (
               <Text style={[styles.limitReachedText, { color: colors.error || '#FF6B6B' }]}> 
@@ -279,10 +371,10 @@ const PostQuestionScreen = () => {
           {/* Monthly Question Count */}
           <View style={[styles.questionCountContainer, { backgroundColor: colors.surface }]}> 
             <Text style={[styles.questionCountText, { color: colors.text }]}> 
-              Monthly Progress: {questionCount.currentCount}/{questionCount.limit}
+              Monthly Progress: {questionCount.currentCount || 0}/{questionCount.limit || 100}
             </Text>
             <Text style={[styles.questionCountSubtext, { color: colors.textSecondary }]}> 
-              {questionCount.remaining} questions remaining this month
+              {questionCount.remaining || 0} questions remaining this month
             </Text>
             {!questionCount.canAddMore && (
               <Text style={[styles.limitReachedText, { color: colors.error || '#FF6B6B' }]}> 
@@ -307,6 +399,35 @@ const PostQuestionScreen = () => {
             multiline
             numberOfLines={4}
           />
+        </Card>
+
+        {/* Category Selection */}
+        <Card style={[styles.section, { backgroundColor: colors.surface }]}> 
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Category *</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScrollView}>
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat._id}
+                style={[
+                  styles.categoryChip,
+                  {
+                    backgroundColor: category === cat._id ? colors.primary : colors.background,
+                    borderColor: colors.primary,
+                  },
+                ]}
+                onPress={() => setCategory(cat._id)}
+              >
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    { color: category === cat._id ? 'white' : colors.primary },
+                  ]}
+                >
+                  {cat.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </Card>
 
         {/* Options */}
@@ -446,6 +567,9 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     textAlignVertical: 'top',
+  },
+  categoryScrollView: {
+    marginTop: 8,
   },
   categoryChip: {
     paddingHorizontal: 16,
