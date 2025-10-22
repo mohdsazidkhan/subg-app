@@ -17,7 +17,7 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
+
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -36,7 +36,7 @@ const QuizScreen = () => {
   const route = useRoute();
   const { colors, isDark, toggleTheme } = useTheme();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  
 
   const [quiz, setQuiz] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -86,10 +86,7 @@ const QuizScreen = () => {
       }
     } catch (error) {
       console.error('Error fetching quiz:', error);
-      showMessage({
-        message: t('errors.loadingFailed'),
-        type: 'danger',
-      });
+      showMessage({ message: 'Failed to load quiz', type: 'danger' });
       navigation.goBack();
     } finally {
       setLoading(false);
@@ -192,17 +189,9 @@ const QuizScreen = () => {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-        <TopBar
-          title={t('quiz.question')}
-          showBackButton={true}
-          showThemeToggle={true}
-          onBackPress={() => navigation.goBack()}
-          onThemeToggle={toggleTheme}
-        />
+        <TopBar title="Quiz" showBackButton={true} showThemeToggle={true} onBackPress={() => navigation.goBack()} onThemeToggle={toggleTheme} />
         <Icon name="quiz" size={60} color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>
-          {t('common.loading')}
-        </Text>
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
       </View>
     );
   }
@@ -210,19 +199,13 @@ const QuizScreen = () => {
   if (!quiz) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-        <TopBar
-          title={t('quiz.question')}
-          showBackButton={true}
-          showThemeToggle={true}
-          onBackPress={() => navigation.goBack()}
-          onThemeToggle={toggleTheme}
-        />
+        <TopBar title="Quiz" showBackButton={true} showThemeToggle={true} onBackPress={() => navigation.goBack()} onThemeToggle={toggleTheme} />
         <Icon name="error" size={60} color={colors.error} />
         <Text style={[styles.errorText, { color: colors.text }]}>
           Quiz not found
         </Text>
         <Button
-          title={t('common.back')}
+          title="Back"
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         />
@@ -236,7 +219,7 @@ const QuizScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
-        title={`${t('quiz.question')} ${currentQuestionIndex + 1} ${t('quiz.of')} ${quiz.questions.length}`}
+        title={`Question ${currentQuestionIndex + 1} of ${quiz.questions.length}`}
         showBackButton={true}
         showThemeToggle={true}
         onBackPress={() => navigation.goBack()}
@@ -265,7 +248,7 @@ const QuizScreen = () => {
             <View style={styles.timerContent}>
               <Icon name="schedule" size={24} color={colors.warning} />
               <Text style={[styles.timerText, { color: colors.text }]}>
-                {t('quiz.timeRemaining')}: {formatTime(timeRemaining)}
+                Time Remaining: {formatTime(timeRemaining)}
               </Text>
             </View>
           </Card>
@@ -356,11 +339,7 @@ const QuizScreen = () => {
         {/* Navigation Buttons */}
         <View style={styles.navigationContainer}>
           <Button
-            title={
-              currentQuestionIndex === quiz.questions.length - 1
-                ? t('quiz.finish')
-                : t('quiz.next')
-            }
+            title={currentQuestionIndex === quiz.questions.length - 1 ? 'Finish' : 'Next'}
             onPress={handleNextQuestion}
             loading={submitting}
             disabled={selectedAnswer === null || !showAnswerFeedback}

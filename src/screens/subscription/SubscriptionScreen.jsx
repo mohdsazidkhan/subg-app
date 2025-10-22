@@ -7,12 +7,10 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
@@ -23,8 +21,8 @@ const SubscriptionScreen = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
+  
+  
 
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,69 +36,80 @@ const SubscriptionScreen = () => {
     try {
       setLoading(true);
 
-      // Mock subscription plans - replace with actual API call
-      const mockPlans = [
+      // Subscription plans - MONTHLY ONLY
+      const alignedPlans = [
         {
           _id: 'free',
           name: 'Free',
-          description: 'Basic access to quizzes',
+          description: 'Unlimited Quiz Access (Levels 0-3)',
           price: 0,
-          duration: 'Forever',
+          duration: '1 month',
           features: [
-            'Access to basic quizzes',
-            'Limited quiz attempts',
-            'Basic leaderboard access',
-            'Community support',
+            'Unlimited Quiz Access (Levels 0-3)',
+            'Community Access',
+            'Basic Analytics',
+            'Email Support',
           ],
+          isPopular: false,
+          isCurrent: user?.subscriptionStatus === 'free',
         },
         {
           _id: 'basic',
           name: 'Basic',
-          description: 'Enhanced quiz experience',
+          description: 'Unlimited Quiz Access (Levels 0-5)',
           price: 99,
-          duration: 'Monthly',
+          duration: '1 month',
           features: [
-            'All free features',
-            'Unlimited quiz attempts',
-            'Advanced analytics',
-            'Priority support',
-            'Ad-free experience',
+            'Unlimited Quiz Access (Levels 0-5)',
+            'Community Access',
+            'Advanced Analytics',
+            'Priority Support',
+            'Early Access to New Features',
           ],
+          isPopular: true,
+          isCurrent: user?.subscriptionStatus === 'basic',
         },
         {
           _id: 'premium',
           name: 'Premium',
-          description: 'Full access to all features',
+          description: 'Unlimited Quiz Access (Levels 0-7)',
           price: 199,
-          duration: 'Monthly',
+          duration: '1 month',
           features: [
-            'All basic features',
-            'Exclusive premium quizzes',
-            'Detailed performance reports',
-            '24/7 priority support',
-            'Early access to new features',
-            'Custom study plans',
+            'Unlimited Quiz Access (Levels 0-7)',
+            'Community Access',
+            'Advanced Analytics',
+            'Priority Support',
+            'Early Access to New Features',
+            'Custom Quiz Creation',
+            'Advanced Reporting',
           ],
-          isPopular: true,
+          isPopular: false,
+          isCurrent: user?.subscriptionStatus === 'premium',
         },
         {
           _id: 'pro',
           name: 'Pro',
-          description: 'For serious learners',
-          price: 399,
-          duration: 'Monthly',
+          description: 'Unlimited Quiz Access (All Levels)',
+          price: 299,
+          duration: '1 month',
           features: [
-            'All premium features',
-            'Personal tutor sessions',
-            'Advanced analytics dashboard',
-            'Custom quiz creation',
-            'API access',
-            'White-label options',
+            'Unlimited Quiz Access (All Levels)',
+            'Community Access',
+            'Advanced Analytics',
+            'Priority Support',
+            'Early Access to New Features',
+            'Custom Quiz Creation',
+            'Advanced Reporting',
+            'API Access',
+            'White-label Options',
           ],
+          isPopular: false,
+          isCurrent: user?.subscriptionStatus === 'pro',
         },
       ];
 
-      setPlans(mockPlans);
+      setPlans(alignedPlans);
     } catch (error) {
       console.error('Error fetching subscription plans:', error);
       showMessage({
@@ -110,11 +119,6 @@ const SubscriptionScreen = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
   };
 
   const handleSubscribe = async (planId) => {
@@ -288,30 +292,16 @@ const SubscriptionScreen = () => {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-        <TopBar
-          title={t('navigation.subscription')}
-          showBackButton={true}
-          showLanguageToggle={true}
-          onBackPress={() => navigation.goBack()}
-          onLanguageToggle={handleLanguageToggle}
-        />
+        <TopBar title="Subscription" showBackButton={true} onBackPress={() => navigation.goBack()} />
         <Icon name="card-membership" size={60} color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>
-          {t('common.loading')}
-        </Text>
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TopBar
-        title={t('navigation.subscription')}
-        showBackButton={true}
-        showLanguageToggle={true}
-        onBackPress={() => navigation.goBack()}
-        onLanguageToggle={handleLanguageToggle}
-      />
+      <TopBar title="Subscription" showBackButton={true} onBackPress={() => navigation.goBack()} />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}

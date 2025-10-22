@@ -8,11 +8,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
@@ -23,8 +21,6 @@ const LevelDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
 
   const [level, setLevel] = useState(null);
   const [quizzes, setQuizzes] = useState([]);
@@ -49,7 +45,7 @@ const LevelDetailScreen = () => {
     } catch (error) {
       console.error('Error fetching level data:', error);
       showMessage({
-        message: t('errors.loadingFailed'),
+        message: 'Failed to load level data',
         type: 'danger',
       });
     } finally {
@@ -207,9 +203,7 @@ const LevelDetailScreen = () => {
           onLanguageToggle={handleLanguageToggle}
         />
         <Icon name="star" size={60} color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>
-          {t('common.loading')}
-        </Text>
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
       </View>
     );
   }
@@ -228,11 +222,7 @@ const LevelDetailScreen = () => {
         <Text style={[styles.errorText, { color: colors.text }]}>
           Level not found
         </Text>
-        <Button
-          title={t('common.back')}
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        />
+        <Button title="Back" onPress={() => navigation.goBack()} style={styles.backButton} />
       </View>
     );
   }

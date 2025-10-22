@@ -3,3 +3,5 @@ export { default as Card } from './Card';
 export { default as Input } from './Input';
 export { default as Badge } from './Badge';
 export { default as Modal } from './Modal';
+export { default as BottomSheetCreate } from './BottomSheetCreate';
+export { default as StartQuizModal } from './StartQuizModal';

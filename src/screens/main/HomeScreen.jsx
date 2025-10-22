@@ -14,10 +14,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 // Navigation and types removed for JavaScript conversion
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { useNetwork } from '../../contexts/NetworkContext';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
@@ -33,6 +31,7 @@ import AddQuestionSection from '../../components/AddQuestionSection';
 import ReferralSection from '../../components/ReferralSection';
 import NetworkStatusIndicator from '../../components/NetworkStatusIndicator';
 import OfflineFallback from '../../components/OfflineFallback';
+import CreateQuizEarnSection from '../../components/CreateQuizEarnSection';
 
 const { width } = Dimensions.get('window');
 
@@ -47,8 +46,6 @@ const HomeScreen = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
   const { isNetworkAvailable, isNetworkLoading, refreshNetworkStatus } = useNetwork();
 
   const [homeData, setHomeData] = useState(null);
@@ -66,8 +63,37 @@ const HomeScreen = () => {
   const [profileCompletion, setProfileCompletion] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [userLevelData, setUserLevelData] = useState(null);
-  const [currentMonthQuestionCount, setCurrentMonthQuestionCount] = useState(0);
-
+  const [currentMonthQuestionCount, setCurrentMonthQuestionCount] = useState({
+    currentCount: 0,
+    limit: 100,
+    remaining: 100,
+    canAddMore: true,
+  });
+  console.log(topPerformers, 'topPerformers');
+  
+  // Helper function to check if user has active subscription (any paid plan)
+  const hasActiveSubscription = () => {
+    if (!user || !user?.subscriptionStatus) {
+      return false;
+    }
+    
+    const paidPlans = ['basic', 'premium', 'pro'];
+    if (!paidPlans.includes(user.subscriptionStatus.toLowerCase())) {
+      return false;
+    }
+    
+    // Check if subscription is expired
+    if (user.subscriptionExpiry) {
+      const now = new Date();
+      const expiryDate = new Date(user.subscriptionExpiry);
+      if (expiryDate < now) {
+        return false; // Subscription expired
+      }
+    }
+    
+    return true;
+  };
+  
   useEffect(() => {
     fetchData();
     fetchProfileCompletion();
@@ -75,7 +101,7 @@ const HomeScreen = () => {
     setTimeout(() => {
       setShowSystemUpdateModal(true);
     }, 1000);
-  }, []);
+  }, [fetchData, fetchProfileCompletion]);
 
   const fetchData = async () => {
     try {
@@ -88,16 +114,19 @@ const HomeScreen = () => {
         return;
       }
       
+      // First fetch categories, then subcategories
       await Promise.all([
         fetchHomeData(),
         fetchCategories(),
-        fetchSubcategories(),
         fetchLevels(),
         fetchTopPerformers(),
         fetchMonthlyLegends(),
         fetchBlogs(),
         fetchCurrentMonthQuestionCount(),
       ]);
+      
+      // Then fetch subcategories after categories are loaded
+      await fetchSubcategories();
     } catch (error) {
       console.error('Error fetching data:', error);
       
@@ -164,7 +193,6 @@ const HomeScreen = () => {
   const fetchTopPerformers = async () => {
     try {
       const response = await API.getPublicTopPerformersMonthly(10, user?._id);
-      console.error('getPublicTopPerformersMonthly', response);
       if (response.success) {
         setTopPerformers(response.data.top);
       }
@@ -213,15 +241,36 @@ const HomeScreen = () => {
 
   const fetchCurrentMonthQuestionCount = async () => {
     try {
-      if (user) {
-        const response = await API.getCurrentMonthQuestionCount();
-        console.error('fetchCurrentMonthQuestionCount', response);
+      if (user && user._id) {
+        const response = await API.getCurrentMonthQuestionCount(user._id);
+        console.log('fetchCurrentMonthQuestionCount', response);
         if (response.success) {
-          setCurrentMonthQuestionCount(response.count || 0);
+          const data = response.data || 0;
+          setCurrentMonthQuestionCount({
+            currentCount: data,
+            limit: 100,
+            remaining: Math.max(0, 100 - data),
+            canAddMore: data < 100,
+          });
         }
+      } else {
+        // Set default values when user is not available
+        setCurrentMonthQuestionCount({
+          currentCount: 0,
+          limit: 100,
+          remaining: 100,
+          canAddMore: true,
+        });
       }
     } catch (error) {
       console.error('Error fetching current month question count:', error);
+      // Set default values on error
+      setCurrentMonthQuestionCount({
+        currentCount: 0,
+        limit: 100,
+        remaining: 100,
+        canAddMore: true,
+      });
     }
   };
 
@@ -336,17 +385,11 @@ const HomeScreen = () => {
     setRefreshing(false);
   };
 
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
-  };
-
-
-  if (loading) {
+  if (loading || !colors || !colors.background) {
     return (
-      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-        <Icon name="quiz" size={60} color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>
+      <View style={[styles.container, styles.centerContent, { backgroundColor: '#FFFFFF' }]}>
+        <Icon name="quiz" size={60} color="#EF4444" />
+        <Text style={[styles.loadingText, { color: '#000000' }]}>
           Loading your quiz dashboard...
         </Text>
       </View>
@@ -360,17 +403,15 @@ const HomeScreen = () => {
         fetchProfileCompletion();
       }}
     >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors?.background || '#FFFFFF' }]}>
         <TopBar
-          title={t('navigation.home')}
+          title="Home"
           showMenuButton={true}
-          showLanguageToggle={true}
           showThemeToggle={true}
           onMenuPress={() => {
             // Navigate to More tab instead of opening drawer
             navigation.navigate('MainTabs', { screen: 'More' });
           }}
-          onLanguageToggle={handleLanguageToggle}
           onThemeToggle={toggleTheme}
         />
 
@@ -394,7 +435,7 @@ const HomeScreen = () => {
 
         {/* Header */}
         <LinearGradient
-          colors={colors.backgroundGradient}
+          colors={colors.backgroundGradient || [colors.background, colors.surface]}
           style={styles.header}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -406,7 +447,7 @@ const HomeScreen = () => {
                 {
                   top: -50,
                   left: -25,
-                  backgroundColor: colors.primary + '1F',
+                  backgroundColor: (colors?.primary || '#EF4444') + '1F',
                 },
               ]}
             />
@@ -416,7 +457,7 @@ const HomeScreen = () => {
                 {
                   bottom: -20,
                   right: -20,
-                  backgroundColor: colors.accent + '1A',
+                  backgroundColor: (colors?.accent || '#06B6D4') + '1A',
                 },
               ]}
             />
@@ -424,33 +465,33 @@ const HomeScreen = () => {
           <View style={styles.headerContent}>
             <Logo size={60} showText={false} />
             <View style={styles.headerText}>
-              <Text style={[styles.welcomeText, { color: colors.text }]}>
-                {t('home.welcome')}
+              <Text style={[styles.welcomeText, { color: colors?.text || '#000000' }]}>
+                Welcome to SUBG Quiz
               </Text>
-              <Text style={[styles.appTitle, { color: colors.text }]}>
+              <Text style={[styles.appTitle, { color: colors?.text || '#000000' }]}>
                 SUBG QUIZ! 🎯
               </Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                {t('home.subtitle')}
+              <Text style={[styles.subtitle, { color: colors?.textSecondary || '#666666' }]}>
+                Student Unknown's Battle Ground Quiz
               </Text>
             </View>
           </View>
         </LinearGradient>
 
         {/* Categories Carousel */}
-        {categories.length > 0 && (
+        {categories && categories.length > 0 && (
           <Carousel
-            title="📚 Categories"
+            title={`Categories`}
             onViewAllPress={() => navigation.navigate('Search')}
             cardWidth={width * 0.7}
           >
             {categories.slice(0, 8).map((category) => (
               <CategoryCard
-                key={category._id}
+                key={category?._id || Math.random()}
                 category={category}
                 onPress={() =>
                   navigation.navigate('CategoryDetail', {
-                    categoryId: category._id,
+                    categoryId: category?._id,
                   })
                 }
                 width={width * 0.7}
@@ -460,19 +501,19 @@ const HomeScreen = () => {
         )}
 
         {/* Subcategories Carousel */}
-        {subcategories.length > 0 && (
+        {subcategories && subcategories.length > 0 && (
           <Carousel
-            title="🔍 Subcategories"
+            title={`Subcategories`}
             onViewAllPress={() => navigation.navigate('Search')}
             cardWidth={width * 0.6}
           >
             {subcategories.slice(0, 10).map((subcategory) => (
               <CategoryCard
-                key={subcategory._id}
+                key={subcategory?._id || Math.random()}
                 category={subcategory}
                 onPress={() =>
                   navigation.navigate('SubcategoryDetail', {
-                    subcategoryId: subcategory._id,
+                    subcategoryId: subcategory?._id,
                   })
                 }
                 width={width * 0.6}
@@ -482,18 +523,18 @@ const HomeScreen = () => {
         )}
 
         {/* Levels Carousel */}
-        {levels.length > 0 && (
+        {levels && levels.length > 0 && (
           <Carousel
-            title="🏆 Learning Levels"
+            title={`Levels`}
             onViewAllPress={() => navigation.navigate('Levels')}
             cardWidth={width * 0.75}
           >
             {levels?.map((level) => (
               <LevelCard
-                key={level._id}
+                key={level?._id || Math.random()}
                 level={level}
                 onPress={() =>
-                  navigation.navigate('LevelDetail', { levelId: level._id })
+                  navigation.navigate('LevelDetail', { levelId: level?._id, levelNumber: level?.level })
                 }
                 width={width * 0.75}
               />
@@ -504,7 +545,7 @@ const HomeScreen = () => {
         {/* Previous Month Legends */}
         {monthlyLegends.length > 0 && (
           <Carousel
-            title="👑 Previous Month Legends"
+            title={`Previous Month Legends`}
             onViewAllPress={() => navigation.navigate('Leaderboard')}
             cardWidth={width * 0.7}
           >
@@ -518,30 +559,22 @@ const HomeScreen = () => {
           </Carousel>
         )}
 
-        {/* Top 10 Performers Current Month */}
-        {topPerformers.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                🏅 Top 10 Performers This Month
-              </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')}>
-                <Text style={[styles.viewAllText, { color: colors.primary }]}>
-                  View All
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.topPerformersGrid}>
-              {topPerformers?.map((performer, index) => (
-                <TopPerformerCard
-                  key={performer._id}
-                  performer={performer}
-                  rank={index + 1}
-                  width={(width - 48) / 2}
-                />
-              ))}
-            </View>
-          </View>
+        {/* Top 10 Performers Current Month - Carousel like Previous Month Legends */}
+        {topPerformers && topPerformers.length > 0 && (
+          <Carousel
+            title={`Top 10 Performers This Month`}
+            onViewAllPress={() => navigation.navigate('Leaderboard')}
+            cardWidth={width * 0.7}
+          >
+            {topPerformers.map((performer, index) => (
+              <TopPerformerCard
+                key={performer?._id || Math.random()}
+                performer={performer}
+                rank={index + 1}
+                width={width * 0.7}
+              />
+            ))}
+          </Carousel>
         )}
 
         {/* Referral Section */}
@@ -553,24 +586,36 @@ const HomeScreen = () => {
         {/* Add Question Section */}
         <AddQuestionSection
           onPress={() => navigation.navigate('PostQuestion')}
-          isProUser={user?.subscriptionStatus === 'pro'}
+          isProUser={hasActiveSubscription()}
           currentMonthCount={currentMonthQuestionCount}
-          monthlyLimit={50}
+        />
+
+        {/* Create Quiz & Earn Subscription Section */}
+        <CreateQuizEarnSection
+          onCreatePress={() => {
+            if (user) {
+              // Navigate to Post tab's CreateUserQuiz nested screen
+              navigation.navigate('PostQuestion', { screen: 'CreateUserQuiz' });
+            } else {
+              navigation.navigate('Register');
+            }
+          }}
+          onMyQuizzesPress={() => navigation.navigate('MyQuizzes')}
         />
 
         {/* Blogs Section */}
-        {blogs.length > 0 && (
+        {blogs && blogs.length > 0 && (
           <Carousel
-            title="📖 Latest Blogs & Articles"
+            title={`Latest Blogs & Articles`}
             onViewAllPress={() => navigation.navigate('Articles')}
             cardWidth={width * 0.9}
           >
             {blogs.map((blog) => (
               <BlogCard
-                key={blog._id}
+                key={blog?._id || Math.random()}
                 blog={blog}
                 onPress={() =>
-                  navigation.navigate('ArticleDetail', { articleId: blog._id })
+                  navigation.navigate('ArticleDetail', { articleId: blog?.slug || blog?._id })
                 }
                 width={width * 0.9}
               />

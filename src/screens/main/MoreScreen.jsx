@@ -9,11 +9,9 @@ import {
   Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
@@ -22,22 +20,16 @@ const MoreScreen = () => {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
   const { colors, toggleTheme, isDarkMode } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
-
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
-  };
+  
 
   const handleLogout = () => {
     Alert.alert(
-      t('profile.logout'),
+      'Logout',
       'Are you sure you want to logout?',
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: t('profile.logout'),
+          text: 'Logout',
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -50,64 +42,64 @@ const MoreScreen = () => {
 
   const menuSections = [
     {
-      title: t('menu.account'),
+      title: 'Account',
       items: [
         {
-          title: t('profile.editProfile'),
+          title: 'Edit Profile',
           icon: 'edit',
           onPress: () => {
             // Navigate to edit profile
           },
         },
         {
-          title: t('profile.subscription'),
+          title: 'Subscription',
           icon: 'card-membership',
           onPress: () => navigation.navigate('Subscription'),
         },
         {
-          title: t('profile.notifications'),
+          title: 'Notifications',
           icon: 'notifications',
           onPress: () => navigation.navigate('Notifications'),
         },
       ],
     },
     {
-      title: t('menu.learning'),
+      title: 'Learning',
       items: [
         {
-          title: t('profile.quizHistory'),
+          title: 'Quiz History',
           icon: 'history',
           onPress: () => navigation.navigate('QuizHistory'),
         },
         {
-          title: t('profile.achievements'),
+          title: 'Achievements',
           icon: 'emoji-events',
           onPress: () => navigation.navigate('Achievements'),
         },
         {
-          title: t('navigation.rewards'),
+          title: 'Rewards',
           icon: 'redeem',
           onPress: () => navigation.navigate('Rewards'),
         },
       ],
     },
     {
-      title: t('menu.support'),
+      title: 'Support',
       items: [
         {
-          title: t('profile.help'),
+          title: 'Help',
           icon: 'help',
           onPress: () => {
             // Open help
           },
         },
         {
-          title: t('profile.contact'),
+          title: 'Contact Us',
           icon: 'contact-support',
           onPress: () => navigation.navigate('ContactUs'),
         },
         {
-          title: t('profile.feedback'),
+          title: 'Feedback',
           icon: 'feedback',
           onPress: () => {
             // Open feedback
@@ -116,20 +108,20 @@ const MoreScreen = () => {
       ],
     },
     {
-      title: t('menu.legal'),
+      title: 'Legal',
       items: [
         {
-          title: t('legal.terms'),
+          title: 'Terms of Service',
           icon: 'description',
           onPress: () => navigation.navigate('Terms'),
         },
         {
-          title: t('legal.privacy'),
+          title: 'Privacy Policy',
           icon: 'privacy-tip',
           onPress: () => navigation.navigate('Privacy'),
         },
         {
-          title: t('legal.refund'),
+          title: 'Refund Policy',
           icon: 'money-off',
           onPress: () => navigation.navigate('Refund'),
         },
@@ -150,10 +142,8 @@ const MoreScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
-        title={t('navigation.more')}
-        showLanguageToggle={true}
+        title={'More'}
         showThemeToggle={true}
-        onLanguageToggle={handleLanguageToggle}
         onThemeToggle={toggleTheme}
       />
 
@@ -176,7 +166,7 @@ const MoreScreen = () => {
 
           <View style={styles.subscriptionStatus}>
             <Text style={[styles.subscriptionLabel, { color: colors.textSecondary }]}>
-              {t('profile.status')}:
+              Status:
             </Text>
             <Text style={[styles.subscriptionValue, { color: colors.primary }]}>
               {user?.subscriptionStatus?.toUpperCase() || 'FREE'}
@@ -213,14 +203,14 @@ const MoreScreen = () => {
         {/* Settings */}
         <Card style={styles.settingsCard}>
           <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 16 }]}>
-            {t('navigation.settings')}
+            Settings
           </Text>
           
           <View style={styles.settingItem}>
             <View style={styles.settingContent}>
               <Icon name="palette" size={24} color={colors.primary} />
               <Text style={[styles.settingText, { color: colors.text }]}>
-                {t('settings.theme')}
+                Theme
               </Text>
             </View>
             <TouchableOpacity
@@ -232,23 +222,6 @@ const MoreScreen = () => {
               </Text>
             </TouchableOpacity>
           </View>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingContent}>
-              <Icon name="language" size={24} color={colors.primary} />
-              <Text style={[styles.settingText, { color: colors.text }]}>
-                {t('settings.language')}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={[styles.languageToggle, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={handleLanguageToggle}
-            >
-              <Text style={[styles.languageToggleText, { color: colors.text }]}>
-                {currentLanguage === 'en' ? 'English' : 'हिन्दी'}
-              </Text>
-            </TouchableOpacity>
-          </View>
         </Card>
 
         {/* Share App */}
@@ -256,7 +229,7 @@ const MoreScreen = () => {
           <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
             <Icon name="share" size={24} color="white" />
             <Text style={styles.shareButtonText}>
-              {t('menu.shareApp')}
+              Share App
             </Text>
           </TouchableOpacity>
         </Card>
@@ -264,7 +237,7 @@ const MoreScreen = () => {
         {/* Logout */}
         <Card style={styles.logoutCard}>
           <Button
-            title={t('profile.logout')}
+            title={'Logout'}
             onPress={handleLogout}
             variant="outline"
             icon={<Icon name="logout" size={20} color={colors.error} />}

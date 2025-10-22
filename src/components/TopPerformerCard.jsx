@@ -4,21 +4,24 @@ import {
   Text,
   StyleSheet,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
-
-const { width } = Dimensions.get('window');
+import { useNavigation } from '@react-navigation/native';
 
 const TopPerformerCard = ({
   performer,
   rank,
-  width = (width - 48) / 2,
+  width
 }) => {
   const { colors } = useTheme();
-
   const getRankColor = (rank) => {
+    // Ensure colors object exists
+    if (!colors || typeof colors !== 'object') {
+      return '#EF4444'; // Fallback color
+    }
     switch (rank) {
       case 1:
         return colors.warning; // Gold
@@ -48,11 +51,18 @@ const TopPerformerCard = ({
     const rankColor = getRankColor(rank);
     return [rankColor + '20', rankColor + '10'];
   };
+  console.log(performer, 'performerperformerperformerperformerperformerperformerperformer')
+  const monthly = performer?.monthly || {};
+  const totalQuizzes = monthly?.totalQuizAttempts;
+  const highScoreWins = monthly?.highScoreWins;
+  const accuracy = monthly?.accuracy;
+  const totalCorrectAnswers = performer?.totalCorrectAnswers;
+  const totalScore = performer?.totalScore;
 
   return (
     <View style={[styles.container, { width, backgroundColor: colors.surface }]}>
       <LinearGradient
-        colors={getGradientColors(rank)}
+        colors={getGradientColors(rank) || ['#EF444420', '#EF444410']}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -82,20 +92,28 @@ const TopPerformerCard = ({
         </Text>
 
         <View style={styles.stats}>
-          {performer.score !== undefined && (
+          {totalQuizzes !== undefined && (
             <View style={styles.statItem}>
-              <Icon name="quiz" size={14} color={colors.textSecondary} />
-              <Text style={[styles.statText, { color: colors.textSecondary }]}>
-                {performer.score} pts
-              </Text>
+              <Icon name="playlist-add-check" size={14} color={colors.textSecondary} />
+              <Text style={[styles.statText, { color: colors.textSecondary }]}>{totalQuizzes}</Text>
             </View>
           )}
-          {performer.quizCount !== undefined && (
+          {highScoreWins !== undefined && (
             <View style={styles.statItem}>
-              <Icon name="trending-up" size={14} color={colors.textSecondary} />
-              <Text style={[styles.statText, { color: colors.textSecondary }]}>
-                {performer.quizCount} quizzes
-              </Text>
+              <Icon name="military-tech" size={14} color={colors.textSecondary} />
+              <Text style={[styles.statText, { color: colors.textSecondary }]}>{highScoreWins}</Text>
+            </View>
+          )}
+          {accuracy !== undefined && (
+            <View style={styles.statItem}>
+              <Icon name="speed" size={14} color={colors.textSecondary} />
+              <Text style={[styles.statText, { color: colors.textSecondary }]}>{Math.round(accuracy)}%</Text>
+            </View>
+          )}
+          {totalCorrectAnswers !== undefined && totalScore !== undefined && (
+            <View style={styles.statItem}>
+              <Icon name="check-circle" size={14} color={colors.textSecondary} />
+              <Text style={[styles.statText, { color: colors.textSecondary }]}>{totalCorrectAnswers} / {totalScore}</Text>
             </View>
           )}
         </View>
@@ -127,7 +145,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   gradient: {
-    padding: 1,
+    padding: 12,
     alignItems: 'center',
     minHeight: 140,
     justifyContent: 'space-between',
@@ -137,7 +155,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
+    marginBottom: 6,
+  },
+  gapBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
     marginBottom: 8,
+  },
+  gapText: {
+    fontSize: 11,
+    marginLeft: 4,
+    fontWeight: '600',
   },
   rankContainer: {
     width: 32,
@@ -147,7 +178,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rankNumber: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   avatarContainer: {
@@ -179,7 +210,9 @@ const styles = StyleSheet.create({
   },
   stats: {
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
+    flexDirection: 'row',
+    gap: 10
   },
   statItem: {
     flexDirection: 'row',

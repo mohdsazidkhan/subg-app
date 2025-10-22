@@ -8,7 +8,6 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../../contexts/ThemeContext';
 import API from '../../services/api';
@@ -20,7 +19,6 @@ const SubcategoryDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { colors } = useTheme();
-  const { t } = useTranslation();
 
   const [subcategory, setSubcategory] = useState(null);
   const [quizzes, setQuizzes] = useState([]);

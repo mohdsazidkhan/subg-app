@@ -86,12 +86,16 @@ const Carousel = ({
         ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, { paddingLeft: 20 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingLeft: 20, paddingRight: 20 }]}
         onScroll={handleScroll}
         scrollEventThrottle={16}
         onContentSizeChange={(width) => setContentWidth(width)}
       >
-        {children}
+        {React.Children.toArray(children).map((child, index, arr) => (
+          <View key={index} style={{ marginRight: index === arr.length - 1 ? 0 : spacing }}>
+            {child}
+          </View>
+        ))}
       </ScrollView>
 
       {renderIndicators()}

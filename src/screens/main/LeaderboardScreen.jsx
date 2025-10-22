@@ -9,12 +9,10 @@ import {
   FlatList,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
@@ -24,8 +22,6 @@ const LeaderboardScreen = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
 
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,11 +57,6 @@ const LeaderboardScreen = () => {
     setRefreshing(true);
     await fetchLeaderboard();
     setRefreshing(false);
-  };
-
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
   };
 
   const handleCategoryChange = (category) => {
@@ -163,30 +154,16 @@ const LeaderboardScreen = () => {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-        <TopBar
-          title={t('navigation.leaderboard')}
-          showBackButton={true}
-          showLanguageToggle={true}
-          onBackPress={() => navigation.goBack()}
-          onLanguageToggle={handleLanguageToggle}
-        />
+        <TopBar title="Leaderboard" showBackButton={true} onBackPress={() => navigation.goBack()} />
         <Icon name="leaderboard" size={60} color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>
-          {t('common.loading')}
-        </Text>
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TopBar
-        title={t('navigation.leaderboard')}
-        showBackButton={true}
-        showLanguageToggle={true}
-        onBackPress={() => navigation.goBack()}
-        onLanguageToggle={handleLanguageToggle}
-      />
+      <TopBar title="Leaderboard" showBackButton={true} onBackPress={() => navigation.goBack()} />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}

@@ -43,11 +43,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import FlashMessage from 'react-native-flash-message';
 
-import './src/i18n'; // Initialize i18n
 import AppNavigator from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
-import { LanguageProvider } from './src/contexts/LanguageContext';
 import { NetworkProvider } from './src/contexts/NetworkContext';
 
 function App(){
@@ -57,7 +55,6 @@ function App(){
     GestureHandlerRootView,
     SafeAreaProvider,
     NetworkProvider,
-    LanguageProvider,
     ThemeProvider,
     AuthProvider,
     NavigationContainer,
@@ -79,30 +76,6 @@ function App(){
       <GestureHandlerRootView style={styles.container}>
         <SafeAreaProvider>
           <NetworkProvider>
-            <LanguageProvider>
-              <ThemeProvider>
-                <AuthProvider>
-                  <NavigationContainer>
-                    <StatusBar 
-                      barStyle={isDarkMode ? 'light-content' : 'dark-content'} 
-                      backgroundColor={isDarkMode ? '#1a1a1a' : '#ffffff'}
-                    />
-                    <AppNavigator />
-                    <FlashMessage position="top" />
-                  </NavigationContainer>
-                </AuthProvider>
-              </ThemeProvider>
-            </LanguageProvider>
-          </NetworkProvider>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    </ErrorBoundary>
-  );
-  return (
-    <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider>
-        <NetworkProvider>
-          <LanguageProvider>
             <ThemeProvider>
               <AuthProvider>
                 <NavigationContainer>
@@ -115,10 +88,10 @@ function App(){
                 </NavigationContainer>
               </AuthProvider>
             </ThemeProvider>
-          </LanguageProvider>
-        </NetworkProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+          </NetworkProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 

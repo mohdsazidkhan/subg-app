@@ -4,14 +4,12 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useTranslation } from 'react-i18next';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 
 
 const QuizHistoryScreen = () => {
   const { colors } = useTheme();
-  const { t } = useTranslation();
   
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,11 +95,7 @@ const QuizHistoryScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TopBar
-        title={t('navigation.history') || 'Quiz History'}
-        showBackButton={true}
-        onBackPress={() => {}}
-      />
+      <TopBar title="Quiz History" showBackButton={true} onBackPress={() => {}} />
 
       <ScrollView
         style={styles.scrollView}
@@ -112,9 +106,7 @@ const QuizHistoryScreen = () => {
         {loading ? (
           <View style={[styles.centerContent, { padding: 40 }]}>
             <Icon name="hourglass-top" size={40} color={colors.primary} />
-            <Text style={{ color: colors.text, marginTop: 16 }}>
-              {t('common.loading') || 'Loading...'}
-            </Text>
+            <Text style={{ color: colors.text, marginTop: 16 }}>Loading...</Text>
           </View>
         ) : attempts.length === 0 ? (
           <View style={[styles.centerContent, { padding: 40 }]}>

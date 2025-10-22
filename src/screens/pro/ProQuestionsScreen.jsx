@@ -10,11 +10,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
@@ -25,8 +23,6 @@ const ProQuestionsScreen = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
 
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,11 +66,6 @@ const ProQuestionsScreen = () => {
     setRefreshing(true);
     await fetchQuestions();
     setRefreshing(false);
-  };
-
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
   };
 
   const handleCreateQuestion = () => {
@@ -317,30 +308,16 @@ const ProQuestionsScreen = () => {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-        <TopBar
-          title={t('navigation.postQuestions')}
-          showBackButton={true}
-          showLanguageToggle={true}
-          onBackPress={() => navigation.goBack()}
-          onLanguageToggle={handleLanguageToggle}
-        />
+        <TopBar title="Post Questions" showBackButton={true} onBackPress={() => navigation.goBack()} />
         <Icon name="quiz" size={60} color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>
-          {t('common.loading')}
-        </Text>
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TopBar
-        title={t('navigation.postQuestions')}
-        showBackButton={true}
-        showLanguageToggle={true}
-        onBackPress={() => navigation.goBack()}
-        onLanguageToggle={handleLanguageToggle}
-      />
+      <TopBar title="Post Questions" showBackButton={true} onBackPress={() => navigation.goBack()} />
       
       <ScrollView
         style={styles.scrollView}

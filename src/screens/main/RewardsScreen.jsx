@@ -9,12 +9,10 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
@@ -25,8 +23,6 @@ const RewardsScreen = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
 
   const [rewards, setRewards] = useState([]);
   const [userPoints, setUserPoints] = useState(0);
@@ -68,11 +64,6 @@ const RewardsScreen = () => {
     setRefreshing(true);
     await fetchRewardsData();
     setRefreshing(false);
-  };
-
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
   };
 
   const handleRedeemReward = async (reward) => {
@@ -215,17 +206,9 @@ const RewardsScreen = () => {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-        <TopBar
-          title={t('navigation.rewards')}
-          showBackButton={true}
-          showLanguageToggle={true}
-          onBackPress={() => navigation.goBack()}
-          onLanguageToggle={handleLanguageToggle}
-        />
+        <TopBar title="Rewards" showBackButton={true} onBackPress={() => navigation.goBack()} />
         <Icon name="redeem" size={60} color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>
-          {t('common.loading')}
-        </Text>
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
       </View>
     );
   }
@@ -235,13 +218,7 @@ const RewardsScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TopBar
-        title={t('navigation.rewards')}
-        showBackButton={true}
-        showLanguageToggle={true}
-        onBackPress={() => navigation.goBack()}
-        onLanguageToggle={handleLanguageToggle}
-      />
+      <TopBar title="Rewards" showBackButton={true} onBackPress={() => navigation.goBack()} />
 
       <ScrollView
         style={styles.scrollView}

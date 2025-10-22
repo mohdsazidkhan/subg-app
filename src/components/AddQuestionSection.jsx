@@ -4,24 +4,28 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 
-const { width } = Dimensions.get('window');
-
 const AddQuestionSection = ({
   onPress,
   isProUser = false,
-  currentMonthCount = 0,
-  monthlyLimit = 50,
+  currentMonthCount = {
+    currentCount: 0,
+    limit: 100,
+    remaining: 100,
+    canAddMore: true,
+  }
 }) => {
   const { colors } = useTheme();
 
   const getProgressPercentage = () => {
-    return Math.min((currentMonthCount / monthlyLimit) * 100, 100);
+    if (!currentMonthCount || typeof currentMonthCount !== 'object') {
+      return 0;
+    }
+    return Math.min((currentMonthCount?.currentCount / currentMonthCount?.limit) * 100, 100);
   };
 
   const getProgressColor = () => {
@@ -30,6 +34,29 @@ const AddQuestionSection = ({
     if (percentage >= 60) return colors.warning;
     return colors.success;
   };
+
+  const steps = [
+    {
+      step: "1",
+      title: "Create Questions",
+      description: "Submit quiz questions through your dashboard"
+    },
+    {
+      step: "2", 
+      title: "Admin Review",
+      description: "Our team reviews and approves quality questions"
+    },
+    {
+      step: "3",
+      title: "Earn Money",
+      description: "Get ₹10 credited to your wallet for each approved question"
+    },
+    {
+      step: "4",
+      title: "Request Withdrawal",
+      description: "After 100 approved questions, request withdrawal to admin"
+    },
+  ];
 
   return (
     <TouchableOpacity
@@ -67,7 +94,7 @@ const AddQuestionSection = ({
                     This Month
                   </Text>
                   <Text style={[styles.progressCount, { color: colors.text }]}>
-                    {currentMonthCount}/{monthlyLimit}
+                    {currentMonthCount?.currentCount || 0}/{currentMonthCount?.limit || 100}
                   </Text>
                 </View>
                 <View style={[styles.progressBar, { backgroundColor: colors.textSecondary + '20' }]}>

@@ -10,12 +10,10 @@ import {
   TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
@@ -27,8 +25,6 @@ const WalletScreen = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
 
   const [walletData, setWalletData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -98,11 +94,6 @@ const WalletScreen = () => {
     setRefreshing(true);
     await fetchWalletData();
     setRefreshing(false);
-  };
-
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
   };
 
   const handleWithdraw = () => {
@@ -260,15 +251,9 @@ const WalletScreen = () => {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-        <TopBar
-          title={t('navigation.myWallet')}
-          showBackButton={true}
-          showLanguageToggle={true}
-          onBackPress={() => navigation.goBack()}
-          onLanguageToggle={handleLanguageToggle}
-        />
+        <TopBar title="My Wallet" showBackButton={true} onBackPress={() => navigation.goBack()} />
         <Icon name="account-balance-wallet" size={60} color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>{t('common.loading')}</Text>
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
       </View>
     );
   }
@@ -276,29 +261,17 @@ const WalletScreen = () => {
   if (!walletData) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-        <TopBar
-          title={t('navigation.myWallet')}
-          showBackButton={true}
-          showLanguageToggle={true}
-          onBackPress={() => navigation.goBack()}
-          onLanguageToggle={handleLanguageToggle}
-        />
+        <TopBar title="My Wallet" showBackButton={true} onBackPress={() => navigation.goBack()} />
         <Icon name="error" size={60} color={colors.error} />
         <Text style={[styles.errorText, { color: colors.text }]}>Failed to load wallet data</Text>
-        <Button title={t('common.retry')} onPress={fetchWalletData} style={styles.retryButton} />
+        <Button title="Retry" onPress={fetchWalletData} style={styles.retryButton} />
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TopBar
-        title={t('navigation.myWallet')}
-        showBackButton={true}
-        showLanguageToggle={true}
-        onBackPress={() => navigation.goBack()}
-        onLanguageToggle={handleLanguageToggle}
-      />
+      <TopBar title="My Wallet" showBackButton={true} onBackPress={() => navigation.goBack()} />
 
       <ScrollView
         style={styles.scrollView}

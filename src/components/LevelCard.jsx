@@ -4,20 +4,22 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 
-const { width } = Dimensions.get('window');
-
 const LevelCard = ({
   level,
   onPress,
-  width = width * 0.75,
+  width = undefined,
 }) => {
   const { colors } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
+  const cardWidth = width ?? Math.floor(screenWidth * 0.75);
+  const scale = Math.min(screenWidth / 375, 1.15);
 
   const getLevelIcon = (levelNumber) => {
     const icons = [
@@ -36,6 +38,11 @@ const LevelCard = ({
   };
 
   const getLevelColors = (levelNumber) => {
+    // Ensure colors object exists
+    if (!colors || typeof colors !== 'object') {
+      return ['#EF4444', '#F59E0B']; // Fallback colors
+    }
+
     const colorSets = [
       [colors.primary, colors.secondary],
       [colors.success, colors.accent],
@@ -51,39 +58,42 @@ const LevelCard = ({
     return colorSets[levelNumber - 1] || [colors.primary, colors.secondary];
   };
 
-  const levelColors = getLevelColors(level.level);
+  const levelColors = getLevelColors(level?.level) || ['#EF4444', '#F59E0B'];
 
   return (
     <TouchableOpacity
-      style={[styles.container, { width, backgroundColor: colors.surface }]}
+      style={[styles.container, { width: cardWidth, backgroundColor: colors.surface }]}
       onPress={onPress}
       activeOpacity={0.8}
     >
       <LinearGradient
-        colors={[levelColors[0] + '20', levelColors[1] + '20']}
+        colors={[
+          (levelColors[0] || '#EF4444') + '20', 
+          (levelColors[1] || '#F59E0B') + '20'
+        ]}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.header}>
-          <View style={[styles.iconContainer, { backgroundColor: levelColors[0] + '20' }]}>
-            <Icon name={getLevelIcon(level.level)} size={28} color={levelColors[0]} />
+          <View style={[styles.iconContainer, { backgroundColor: (levelColors[0] || '#EF4444') + '20' }]}>
+            <Icon name={getLevelIcon(level.level)} size={Math.round(26 * scale)} color={levelColors[0] || '#EF4444'} />
           </View>
           <View style={styles.levelInfo}>
-            <Text style={[styles.levelNumber, { color: levelColors[0] }]}>
+            <Text style={[styles.levelNumber, { color: levelColors[0] || '#EF4444', fontSize: 14 * scale }]}>
               Level {level.level}
             </Text>
-            <Text style={[styles.levelName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.levelName, { color: colors.text, fontSize: 16 * scale }]} numberOfLines={1}>
               {level.name}
             </Text>
           </View>
           {level.isUnlocked === false && (
-            <Icon name="lock" size={20} color={colors.textSecondary} />
+            <Icon name="lock" size={Math.round(18 * scale)} color={colors.textSecondary} />
           )}
         </View>
 
         <Text
-          style={[styles.description, { color: colors.textSecondary }]}
+          style={[styles.description, { color: colors.textSecondary, fontSize: 12 * scale, lineHeight: 16 * scale }]}
           numberOfLines={2}
         >
           {level.description}
@@ -91,8 +101,8 @@ const LevelCard = ({
 
         <View style={styles.footer}>
           <View style={styles.quizInfo}>
-            <Icon name="quiz" size={16} color={colors.textSecondary} />
-            <Text style={[styles.quizCount, { color: colors.textSecondary }]}>
+            <Icon name="quiz" size={Math.round(14 * scale)} color={colors.textSecondary} />
+            <Text style={[styles.quizCount, { color: colors.textSecondary, fontSize: 12 * scale }]}>
               {level.quizCount} Quizzes
             </Text>
           </View>
@@ -126,18 +136,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
      marginBottom: 2,
     overflow: 'hidden',
+    // Match CategoryCard subtle shadow + elevation
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
     elevation: 3,
   },
   gradient: {
-    padding: 16,
-    minHeight: 160,
+    padding: 2,
+    minHeight: 140,
     justifyContent: 'space-between',
   },
   header: {
@@ -152,6 +160,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    margin: 4,
   },
   levelInfo: {
     flex: 1,
@@ -164,12 +173,15 @@ const styles = StyleSheet.create({
   levelName: {
     fontSize: 16,
     fontWeight: '600',
+    marginBottom: 1,
+    marginHorizontal: 5,
   },
   description: {
     fontSize: 12,
     lineHeight: 16,
     flex: 1,
     marginBottom: 12,
+    marginHorizontal: 5,
   },
   footer: {
     flexDirection: 'row',
@@ -179,6 +191,8 @@ const styles = StyleSheet.create({
   quizInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
+    marginLeft: 5,
   },
   quizCount: {
     fontSize: 12,

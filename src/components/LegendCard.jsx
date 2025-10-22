@@ -3,19 +3,20 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 
-const { width } = Dimensions.get('window');
-
 const LegendCard = ({
   legend,
-  width = width * 0.7,
+  width = undefined,
 }) => {
   const { colors } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
+  const cardWidth = width ?? Math.floor(screenWidth * 0.7);
+  const scale = Math.min(screenWidth / 375, 1.15);
 
   const getRankColors = (rank) => {
     switch (rank) {
@@ -68,7 +69,7 @@ const LegendCard = ({
   const rankColors = getRankColors(legend.rank);
 
   return (
-    <View style={[styles.container, { width, backgroundColor: colors.surface }]}> 
+    <View style={[styles.container, { width: cardWidth, backgroundColor: colors.surface }]}> 
       <LinearGradient
         colors={[rankColors.primary + '20', rankColors.secondary + '10']}
         style={styles.gradient}
@@ -77,43 +78,43 @@ const LegendCard = ({
       >
         <View style={styles.header}>
           <View style={[styles.rankContainer, { backgroundColor: rankColors.primary }]}> 
-            <Icon name={getRankIcon(legend.rank)} size={24} color={colors.primary} />
+            <Icon name={getRankIcon(legend.rank)} size={Math.round(20 * scale)} color={colors.primary} />
           </View>
           <View style={styles.rankInfo}>
-            <Text style={[styles.rankText, { color: colors.text }]}> 
+            <Text style={[styles.rankText, { color: colors.text, fontSize: 16 * scale }]}> 
               #{legend.rank}
             </Text>
-            <Text style={[styles.period, { color: colors.textSecondary }]}> 
+            <Text style={[styles.period, { color: colors.textSecondary, fontSize: 12 * scale }]}> 
               {monthYear}
             </Text>
           </View>
         </View>
 
-        <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}> 
+        <Text style={[styles.name, { color: colors.text, fontSize: 16 * scale }]} numberOfLines={1}> 
           {legend.userName}
         </Text>
 
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Icon name="quiz" size={16} color={colors.textSecondary} />
-            <Text style={[styles.statValue, { color: colors.text }]}>{legend.highScoreWins || legend.highScoreQuizzes}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>High Score Wins</Text>
+            <Icon name="quiz" size={Math.round(14 * scale)} color={colors.textSecondary} />
+            <Text style={[styles.statValue, { color: colors.text, fontSize: 14 * scale }]}>{legend.highScoreWins || legend.highScoreQuizzes}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary, fontSize: 10 * scale }]}>High Score Wins</Text>
           </View>
           <View style={styles.statItem}>
-            <Icon name="percent" size={16} color={colors.textSecondary} />
-            <Text style={[styles.statValue, { color: colors.text }]}>{legend.accuracy}%</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Accuracy</Text>
+            <Icon name="percent" size={Math.round(14 * scale)} color={colors.textSecondary} />
+            <Text style={[styles.statValue, { color: colors.text, fontSize: 14 * scale }]}>{legend.accuracy}%</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary, fontSize: 10 * scale }]}>Accuracy</Text>
           </View>
           <View style={styles.statItem}>
-            <Icon name="currency-rupee" size={16} color={colors.textSecondary} />
-            <Text style={[styles.statValue, { color: colors.text }]}>{legend.rewardAmount?.toLocaleString?.() || legend.rewardAmount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Prize</Text>
+            <Icon name="currency-rupee" size={Math.round(14 * scale)} color={colors.textSecondary} />
+            <Text style={[styles.statValue, { color: colors.text, fontSize: 14 * scale }]}>{legend.rewardAmount?.toLocaleString?.() || legend.rewardAmount}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary, fontSize: 10 * scale }]}>Prize</Text>
           </View>
         </View>
 
         <View style={[styles.legendBadge, { backgroundColor: rankColors.primary }]}> 
-          <Icon name="verified" size={14} color="white" />
-          <Text style={styles.legendText}>Monthly Legend</Text>
+          <Icon name="verified" size={Math.round(12 * scale)} color="white" />
+          <Text style={[styles.legendText, { fontSize: 12 * scale }]}>Monthly Legend</Text>
         </View>
       </LinearGradient>
     </View>
@@ -126,26 +127,26 @@ const styles = StyleSheet.create({
     borderRadius: 16,
      marginBottom: 2,
     overflow: 'hidden',
+    // Match CategoryCard subtle shadow + elevation
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
     elevation: 3,
   },
   gradient: {
-    padding: 16,
+    padding: 2,
     alignItems: 'center',
-    minHeight: 200,
+    minHeight: 160,
     justifyContent: 'space-between',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 12,
+    marginBottom: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
   },
   rankContainer: {
     width: 40,
@@ -192,7 +193,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -219,6 +220,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
+    marginBottom: 12,
   },
   legendText: {
     color: 'white',

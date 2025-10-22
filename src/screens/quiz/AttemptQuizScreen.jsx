@@ -9,12 +9,10 @@ import {
   BackHandler,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Button from '../../components/Button';
@@ -25,8 +23,6 @@ const AttemptQuizScreen = () => {
   const route = useRoute();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
 
   const [quiz, setQuiz] = useState(route.params?.quiz || null);
   const [questions, setQuestions] = useState([]);

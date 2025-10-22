@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -41,14 +41,7 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
-  /**
-   * Fill test credentials for development
-   */
-  const handleTestLogin = () => {
-    setIdentifier('demo@example.com');
-    setPassword('password123');
-  };
+  const passwordRef = useRef(null);
 
   /**
    * Handle login form submission
@@ -220,18 +213,6 @@ const LoginScreen = () => {
               )}
             </LinearGradient>
           </TouchableOpacity>
-
-          {/* Test Login Button (Development only) */}
-          {__DEV__ && (
-            <TouchableOpacity
-              style={[styles.testButton, { borderColor: colors.border }]}
-              onPress={handleTestLogin}
-            >
-              <Text style={[styles.testButtonText, { color: colors.textSecondary }]}>
-                Fill Test Credentials
-              </Text>
-            </TouchableOpacity>
-          )}
 
           {/* Register Link */}
           <View style={styles.registerContainer}>

@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import TopBar from '../../components/TopBar';
 import Button from '../../components/Button';
 
@@ -15,8 +13,6 @@ const PayUFailureScreen = () => {
   const route = useRoute();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
 
   const { orderDetails, errorMessage } = route.params || {};
 
@@ -35,11 +31,6 @@ const PayUFailureScreen = () => {
     }
   }, []);
 
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
-  };
-
   const handleRetryPayment = () => {
     navigation.navigate('Subscription');
   };
@@ -57,8 +48,6 @@ const PayUFailureScreen = () => {
       <TopBar
         title="Payment Failed"
         showBackButton={false}
-        showLanguageToggle={true}
-        onLanguageToggle={handleLanguageToggle}
       />
 
       <View style={styles.content}>

@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import TopBar from '../../components/TopBar';
 import Button from '../../components/Button';
 
@@ -15,8 +13,6 @@ const PayUSuccessScreen = () => {
   const route = useRoute();
   const { user, updateUser } = useAuth();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
 
   const { orderDetails, transactionId } = route.params || {};
 
@@ -36,11 +32,6 @@ const PayUSuccessScreen = () => {
     }
   }, []);
 
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
-  };
-
   const handleContinue = () => {
     navigation.navigate('MainTabs');
   };
@@ -54,8 +45,6 @@ const PayUSuccessScreen = () => {
       <TopBar
         title="Payment Successful"
         showBackButton={false}
-        showLanguageToggle={true}
-        onLanguageToggle={handleLanguageToggle}
       />
 
       <View style={styles.content}>

@@ -9,12 +9,10 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
@@ -26,8 +24,6 @@ const QuizResultScreen = () => {
   const route = useRoute();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
 
   const [quizResult, setQuizResult] = useState(route.params?.result || null);
   const [loading, setLoading] = useState(false);
@@ -39,11 +35,6 @@ const QuizResultScreen = () => {
       return;
     }
   }, [quizResult]);
-
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
-  };
 
   const calculatePerformance = () => {
     if (!quizResult) return { grade: 'F', message: 'Failed' };

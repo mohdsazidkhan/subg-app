@@ -12,7 +12,6 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
@@ -24,7 +23,6 @@ const ArticleDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { colors } = useTheme();
-  const { t } = useTranslation();
 
   const { articleId } = route.params;
 

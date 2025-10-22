@@ -13,12 +13,28 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
+
+// Temporary in-memory storage to replace AsyncStorage
+const MemoryStorage = {
+  data: {},
+  getItem: async (key) => {
+    return MemoryStorage.data[key] || null;
+  },
+  setItem: async (key, value) => {
+    MemoryStorage.data[key] = value;
+  },
+  removeItem: async (key) => {
+    delete MemoryStorage.data[key];
+  }
+};
+
+// Use MemoryStorage instead of AsyncStorage for now
+const AsyncStorage = MemoryStorage;
 import Button from '../../components/Button';
 import Card from '../../components/Card';
 
@@ -26,8 +42,8 @@ import Card from '../../components/Card';
 const PostQuestionScreen = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
+  
+  
 
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '', '', '']);

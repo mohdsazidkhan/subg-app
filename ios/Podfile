@@ -31,5 +31,15 @@ target 'SubgApp' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    
+    # Fix for RNShareSpec header not found issue
+    installer.pods_project.targets.each do |target|
+      if target.name == 'RNShare'
+        target.build_configurations.each do |config|
+          config.build_settings['HEADER_SEARCH_PATHS'] ||= ['$(inherited)']
+          config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/../build/generated/ios"'
+        end
+      end
+    end
   end
 end

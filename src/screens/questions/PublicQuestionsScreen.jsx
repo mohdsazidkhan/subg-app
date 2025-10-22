@@ -7,15 +7,12 @@ import {
   TouchableOpacity,
   RefreshControl,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../types/navigation';
-import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
@@ -26,56 +23,64 @@ import Card from '../../components/Card';
 const PublicQuestionsScreen = () => {
   const navigation = useNavigation();
   const { colors, isDark, toggleTheme } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
+  
+  
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [query, setQuery] = useState(''); // committed search like web
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
     loadQuestions();
-  }, [page, searchTerm]);
+  }, [page, query]);
 
-  const loadQuestions = useCallback(async () => {
+  // Load questions function
+  const loadQuestions = async() => {
+    if (loading) return; // Prevent multiple simultaneous loads
+    
     setLoading(true);
     try {
-      const params = { page, limit: 20 };
-      if (searchTerm.trim()) {
-        params.search = searchTerm.trim();
-      }
-
+      // If no search query, fetch all default questions. If search query exists, fetch filtered questions
+      const params = { 
+        page, 
+        limit: 20, 
+        search: query.trim() || "" 
+      };
       const response = await API.getPublicUserQuestions(params);
-
+      
       if (response?.success) {
-        const newQuestions = response.data || [];
-
+        const newQuestions = response.data?.questions || [];
+        const totalCount = response.data?.total || 0;
+        const totalPages = response.data?.totalPages || 1;
+        
         if (page === 1) {
           setQuestions(newQuestions);
         } else {
           setQuestions(prev => [...prev, ...newQuestions]);
         }
-
-        setTotal(response.pagination?.total || 0);
-        setHasMore(newQuestions.length === 20);
+        
+        setTotal(totalCount);
+        setHasMore(page < totalPages);
+      } else {
+        console.error('Failed to load questions:', response?.message);
+        showMessage({
+          message: 'Failed to load questions',
+          type: 'danger',
+        });
       }
     } catch (error) {
-      console.error('Failed to load questions:', error);
+      console.error('Error loading questions:', error);
       showMessage({
-        message: 'Failed to load questions',
+        message: 'Error loading questions',
         type: 'danger',
       });
     } finally {
       setLoading(false);
     }
-  }, [page, searchTerm]);
-
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
   };
 
   const onRefresh = async () => {
@@ -89,6 +94,14 @@ const PublicQuestionsScreen = () => {
     setSearchTerm(text);
     setPage(1);
   };
+
+  // Debounced search - commit search after user stops typing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setQuery(searchTerm);
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   const handleAnswer = async (question, selectedIndex) => {
     if (typeof question.selectedOptionIndex === 'number') return;

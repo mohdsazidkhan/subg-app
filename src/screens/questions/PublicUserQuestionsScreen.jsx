@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
@@ -23,7 +22,6 @@ import Button from '../../components/Button';
 const PublicUserQuestionsScreen = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
-  const { t } = useTranslation();
 
   const [items, setItems] = useState<PublicQuestion[]>([]);
   const [page, setPage] = useState(1);

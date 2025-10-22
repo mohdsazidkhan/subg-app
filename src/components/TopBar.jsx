@@ -15,13 +15,11 @@ const TopBar = ({
   title,
   showBackButton = false,
   showMenuButton = false,
-  showLanguageToggle = false,
   showThemeToggle = false,
   rightIcon,
   onBackPress,
   onMenuPress,
   onRightIconPress,
-  onLanguageToggle,
   onThemeToggle,
 }) => {
   const { colors, isDark } = useTheme();
@@ -93,15 +91,6 @@ const TopBar = ({
                   size={24}
                   color={colors.text}
                 />
-              </TouchableOpacity>
-            )}
-            {showLanguageToggle && (
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={onLanguageToggle}
-                activeOpacity={0.7}
-              >
-                <Icon name="language" size={24} color={colors.text} />
               </TouchableOpacity>
             )}
             {rightIcon && (

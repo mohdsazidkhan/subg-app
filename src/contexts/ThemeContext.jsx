@@ -129,8 +129,11 @@ export const ThemeProvider = ({ children }) => {
 
   const colors = isDark ? darkColors : lightColors;
 
+  // Ensure colors object is always available
+  const safeColors = colors || lightColors;
+
   const value = {
-    colors,
+    colors: safeColors,
     isDark,
     themeMode,
     setThemeMode,

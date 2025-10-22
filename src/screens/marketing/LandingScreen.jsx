@@ -11,14 +11,30 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
 import Button from '../../components/Button';
+
+// Temporary in-memory storage to replace AsyncStorage
+const MemoryStorage = {
+  data: {},
+  getItem: async (key) => {
+    return MemoryStorage.data[key] || null;
+  },
+  setItem: async (key, value) => {
+    MemoryStorage.data[key] = value;
+  },
+  removeItem: async (key) => {
+    delete MemoryStorage.data[key];
+  }
+};
+
+// Use MemoryStorage instead of AsyncStorage for now
+const AsyncStorage = MemoryStorage;
 import Logo from '../../components/Logo';
 
 const { width, height } = Dimensions.get('window');
@@ -26,7 +42,8 @@ const { width, height } = Dimensions.get('window');
 const LandingScreen = () => {
   const navigation = useNavigation();
   const { colors, toggleTheme } = useTheme();
-  const { currentLanguage, changeLanguage } = useLanguage();
+  
+  
   const insets = useSafeAreaInsets();
 
   const [levels, setLevels] = useState([]);

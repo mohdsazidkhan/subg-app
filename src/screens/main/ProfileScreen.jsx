@@ -8,11 +8,9 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
@@ -21,8 +19,8 @@ const ProfileScreen = () => {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
   const { colors, toggleTheme } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
+  
+  
 
   const [profileStats] = useState({
     quizzesCompleted: 25,
@@ -31,19 +29,14 @@ const ProfileScreen = () => {
     achievements: 8,
   });
 
-  const handleLanguageToggle = async () => {
-    const newLanguage = currentLanguage === 'en' ? 'hi' : 'en';
-    await changeLanguage(newLanguage);
-  };
-
   const handleLogout = () => {
     Alert.alert(
-      t('profile.logout'),
+      'Logout',
       'Are you sure you want to logout?',
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: t('profile.logout'),
+          text: 'Logout',
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -56,42 +49,42 @@ const ProfileScreen = () => {
 
   const menuItems = [
     {
-      title: t('profile.editProfile'),
+      title: 'Edit Profile',
       icon: 'edit',
       onPress: () => {
         // Navigate to edit profile
       },
     },
     {
-      title: t('profile.quizHistory'),
+      title: 'Quiz History',
       icon: 'history',
       onPress: () => {
         // Navigate to quiz history
       },
     },
     {
-      title: t('profile.achievements'),
+      title: 'Achievements',
       icon: 'emoji-events',
       onPress: () => {
         // Navigate to achievements
       },
     },
     {
-      title: t('navigation.settings'),
+      title: 'Settings',
       icon: 'settings',
       onPress: () => {
         // Navigate to settings
       },
     },
     {
-      title: t('profile.about'),
+      title: 'About',
       icon: 'info',
       onPress: () => {
         // Navigate to about
       },
     },
     {
-      title: t('profile.contact'),
+      title: 'Contact Us',
       icon: 'contact-support',
       onPress: () => {
         // Navigate to contact
@@ -102,12 +95,10 @@ const ProfileScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
-        title={t('navigation.profile')}
+        title={'Profile'}
         showMenuButton={true}
-        showLanguageToggle={true}
         showThemeToggle={true}
         onMenuPress={() => navigation.navigate('MainTabs', { screen: 'More' })}
-        onLanguageToggle={handleLanguageToggle}
         onThemeToggle={toggleTheme}
       />
 
@@ -230,7 +221,7 @@ const ProfileScreen = () => {
         {/* Logout Button */}
         <Card style={styles.logoutContainer}>
           <Button
-            title={t('profile.logout')}
+            title="Logout"
             onPress={handleLogout}
             variant="outline"
             icon={<Icon name="logout" size={20} color={colors.error} />}
@@ -241,9 +232,7 @@ const ProfileScreen = () => {
 
         {/* App Info */}
         <View style={styles.appInfo}>
-          <Text style={[styles.appVersion, { color: colors.textSecondary }]}>
-            {t('profile.version')} 1.0.0
-          </Text>
+          <Text style={[styles.appVersion, { color: colors.textSecondary }]}>Version 1.0.0</Text>
           <Text style={[styles.appName, { color: colors.textSecondary }]}>
             SUBG Quiz App
           </Text>
