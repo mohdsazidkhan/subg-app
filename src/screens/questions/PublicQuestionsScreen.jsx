@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,162 +10,180 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../contexts/ThemeContext';
 import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
-// Ensure there are no named or duplicate imports for Card or TopBar
+import ShareService from '../../services/ShareService';
+import { FRONTEND_URL } from '../../config/env';
 
 
 const PublicQuestionsScreen = () => {
   const navigation = useNavigation();
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors } = useTheme();
   
-  
-  const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [query, setQuery] = useState(''); // committed search like web
+  const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [limit] = useState(20);
   const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const isInitialMount = useRef(true);
 
-  useEffect(() => {
-    loadQuestions();
-  }, [page, query]);
-
-  // Load questions function
-  const loadQuestions = async() => {
-    if (loading) return; // Prevent multiple simultaneous loads
-    
+  // Initial load - replaces all items
+  const load = useCallback(async (resetPage = false) => {
+    const currentPage = resetPage ? 1 : page;
     setLoading(true);
     try {
-      // If no search query, fetch all default questions. If search query exists, fetch filtered questions
-      const params = { 
-        page, 
-        limit: 20, 
-        search: query.trim() || "" 
-      };
-      const response = await API.getPublicUserQuestions(params);
-      
-      if (response?.success) {
-        const newQuestions = response.data?.questions || [];
-        const totalCount = response.data?.total || 0;
-        const totalPages = response.data?.totalPages || 1;
-        
-        if (page === 1) {
-          setQuestions(newQuestions);
-        } else {
-          setQuestions(prev => [...prev, ...newQuestions]);
-        }
-        
-        setTotal(totalCount);
-        setHasMore(page < totalPages);
-      } else {
-        console.error('Failed to load questions:', response?.message);
-        showMessage({
-          message: 'Failed to load questions',
-          type: 'danger',
-        });
+      // Pass empty string if searchTerm is blank to get default questions
+      const searchParam = searchTerm.trim() || '';
+      const res = await API.getPublicUserQuestions({ page: currentPage, limit, search: searchParam });
+      if (res?.success) {
+        const list = res.data || [];
+        setItems(list);
+        setTotal(res.pagination?.total || 0);
+        setPage(currentPage);
+        setHasMore(list.length === limit && list.length < (res.pagination?.total || 0));
       }
-    } catch (error) {
-      console.error('Error loading questions:', error);
+    } catch (e) {
+      console.error('Failed to load public questions', e);
       showMessage({
-        message: 'Error loading questions',
+        message: 'Failed to load questions',
         type: 'danger',
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, searchTerm]);
+
+  // Load more - appends to existing items
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const searchParam = searchTerm.trim() || '';
+      const res = await API.getPublicUserQuestions({ page: nextPage, limit, search: searchParam });
+      if (res?.success) {
+        const newItems = res.data || [];
+        setItems(prev => [...prev, ...newItems]);
+        setPage(nextPage);
+        setHasMore(newItems.length === limit && (items.length + newItems.length) < (res.pagination?.total || 0));
+      }
+    } catch (e) {
+      console.error('Failed to load more questions', e);
+      showMessage({
+        message: 'Failed to load more questions',
+        type: 'danger',
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [page, limit, searchTerm, loadingMore, hasMore, items.length]);
+
+  // Handle search
+  const handleSearch = useCallback(() => {
+    setPage(1);
+    setHasMore(true);
+    setIsSearchActive(true);
+    load(true);
+  }, [load]);
+
+  // Handle clear search
+  const handleClearSearch = useCallback(() => {
+    setSearchTerm('');
+    setPage(1);
+    setHasMore(true);
+    setIsSearchActive(false);
+  }, []);
+
+  // Initial load
+  useEffect(() => { 
+    load();
+    isInitialMount.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Reload when searchTerm is cleared (but not on initial mount)
+  useEffect(() => {
+    if (!isInitialMount.current && searchTerm === '' && !isSearchActive) {
+      setPage(1);
+      setHasMore(true);
+      load(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, isSearchActive]);
 
   const onRefresh = async () => {
-    setRefreshing(true);
     setPage(1);
-    await loadQuestions();
-    setRefreshing(false);
+    setHasMore(true);
+    setIsSearchActive(false);
+    await load(true);
   };
 
-  const handleSearch = (text) => {
-    setSearchTerm(text);
-    setPage(1);
-  };
-
-  // Debounced search - commit search after user stops typing
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setQuery(searchTerm);
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
-
-  const handleAnswer = async (question, selectedIndex) => {
-    if (typeof question.selectedOptionIndex === 'number') return;
+  const answer = async (q, idx) => {
+    try {
+      if (typeof q.selectedOptionIndex === 'number') return;
 
     // Immediately show visual feedback
-    setQuestions(prev =>
-      prev.map(q =>
-        q._id === question._id
-          ? { ...q, selectedOptionIndex: selectedIndex, isAnswered: true }
-          : q
-      )
-    );
-
-    try {
-      await API.answerUserQuestion(question._id, selectedIndex);
+      setItems(prev => prev.map(it => it._id === q._id ? { ...it, selectedOptionIndex: idx, isAnswered: true } : it));
+      
+      await API.answerUserQuestion(q._id, idx);
       showMessage({
         message: 'Answer submitted successfully!',
         type: 'success',
       });
-    } catch (error) {
-      console.error('Failed to submit answer:', error);
+    } catch (e) {
       showMessage({
-        message: 'Failed to submit answer',
+        message: e?.message || 'Failed to submit Answer!',
         type: 'danger',
       });
-
       // Revert the visual feedback on error
-      setQuestions(prev =>
-        prev.map(q =>
-          q._id === question._id
-            ? { ...q, selectedOptionIndex: undefined, isAnswered: false }
-            : q
-        )
-      );
+      setItems(prev => prev.map(it => it._id === q._id ? { ...it, selectedOptionIndex: undefined, isAnswered: false } : it));
     }
   };
 
-  const handleLike = async (question) => {
+  const like = async (q) => {
     try {
-      const response = await API.likeUserQuestion(question._id);
-      if (response?.data?.firstTime) {
-        setQuestions(prev =>
-          prev.map(q =>
-            q._id === question._id
-              ? { ...q, likesCount: (q.likesCount || 0) + 1, isLiked: true }
-              : q
-          )
-        );
+      const res = await API.likeUserQuestion(q._id);
+      if (res?.data?.firstTime) {
+        setItems(prev => prev.map(it => it._id === q._id ? { ...it, likesCount: (it.likesCount||0) + 1 } : it));
       }
-    } catch (error) {
-      console.error('Failed to like question:', error);
+    } catch (e) {
+      console.error('Failed to like question:', e);
     }
   };
 
-  const handleShare = async (question) => {
+  const share = async (q) => {
     try {
-      await API.shareUserQuestion(question._id);
-      showMessage({
-        message: 'Question shared successfully!',
-        type: 'success',
-      });
-    } catch (error) {
-      console.error('Failed to share question:', error);
+      await ShareService.shareUserQuestion(q, FRONTEND_URL);
+      setItems(prev => prev.map(it => it._id === q._id ? { ...it, sharesCount: (it.sharesCount||0) + 1 } : it));
+    } catch (e) {
+      console.error('Failed to share question:', e);
     }
+  };
+
+  const timeAgo = (dateStr) => {
+    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours>1?'s':''} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days>1?'s':''} ago`;
+  };
+
+  const getInitials = (name = '') => {
+    const parts = String(name).trim().split(/\s+/);
+    const first = parts[0]?.[0] || '';
+    const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+    return (first + last).toUpperCase() || 'U';
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -181,169 +199,151 @@ const PublicQuestionsScreen = () => {
     }
   };
 
-  const renderQuestion = (question) => (
-    <Card key={question._id} style={[styles.questionCard, { backgroundColor: colors.surface }]}>
+  const renderQuestion = (row, idx) => {
+    const user = row.userId || {};
+    const serialNumber = idx + 1;
+
+    return (
+      <Card key={row._id} style={[styles.questionCard, { backgroundColor: colors.surface }]}>
       <View style={styles.questionHeader}>
-        <View style={styles.questionMeta}>
-          <Text style={[styles.questionCategory, { color: colors.primary }]}>
-            {question.category?.name || ''}
+          <View style={styles.userInfo}>
+            <View style={styles.avatar}>
+              {user.profilePicture ? (
+                <Text style={[styles.avatarText, { color: 'white' }]}>IMG</Text>
+              ) : (
+                <Text style={[styles.avatarText, { color: 'white' }]}>
+                  {getInitials(user.name)}
+                </Text>
+              )}
+            </View>
+            <View style={styles.userDetails}>
+              <Text style={[styles.userName, { color: colors.text }]}>
+                {user.name || 'Unknown User'}
+              </Text>
+              {user.username && (
+                <Text style={[styles.username, { color: colors.primary }]}>
+                  @{user.username}
           </Text>
-          <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(question.difficulty) + '20' }]}>
-            <Text style={[styles.difficultyText, { color: getDifficultyColor(question.difficulty) }]}>
-              {question.difficulty}
+              )}
+              <Text style={[styles.userLevel, { color: colors.textSecondary }]}>
+                {user.level?.levelName || 'Starter'}
             </Text>
           </View>
-        </View>
-
-        <View style={styles.questionStats}>
-          <View style={styles.statItem}>
-            <Icon name="visibility" size={14} color={colors.textSecondary} />
-            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.viewsCount || 0}</Text>
           </View>
-          <View style={styles.statItem}>
-            <Icon name="reply" size={14} color={colors.textSecondary} />
-            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.answersCount || 0}</Text>
-          </View>
-          <TouchableOpacity style={styles.statItem} onPress={() => handleLike(question)}>
-            <Icon
-              name={question.isLiked ? "favorite" : "favorite-border"}
-              size={14}
-              color={question.isLiked ? colors.error : colors.textSecondary}
-            />
-            <Text style={[styles.statText, { color: colors.textSecondary }]}>{question.likesCount || 0}</Text>
-          </TouchableOpacity>
-        </View>
+          <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>
+            Posted {timeAgo(row.createdAt)}
+          </Text>
       </View>
 
       <Text style={[styles.questionText, { color: colors.text }]}>
-        {question.question}
+          <Text style={[styles.serialNumber, { color: colors.primary }]}>#{serialNumber}. </Text>
+          {row.questionText}
       </Text>
 
       <View style={styles.optionsContainer}>
-        {question.options.map((option, index) => {
-          const isSelected = question.selectedOptionIndex === index;
-          const isCorrect = index === question.correctAnswer;
+          {row.options.map((opt, optIdx) => {
+            const isSelected = typeof row.selectedOptionIndex === 'number' && row.selectedOptionIndex === optIdx;
+            const isCorrect = optIdx === row.correctAnswer;
           const isWrong = isSelected && !isCorrect;
-          const showFeedback = question.isAnswered && isSelected;
-          const showCorrectAnswer = question.isAnswered && !isSelected && isCorrect;
+            const answered = typeof row.selectedOptionIndex === 'number';
+            const showFeedback = answered && isSelected;
+            const showCorrectAnswer = answered && !isSelected && isCorrect;
 
           let backgroundColor = colors.background;
           let borderColor = colors.border;
-          let borderWidth = 1;
+            let textColor = colors.text;
 
           if (showFeedback) {
             if (isCorrect) {
               backgroundColor = '#4CAF50';
               borderColor = '#4CAF50';
-              borderWidth = 2;
+                textColor = 'white';
             } else if (isWrong) {
               backgroundColor = '#F44336';
               borderColor = '#F44336';
-              borderWidth = 2;
+                textColor = 'white';
             }
           } else if (showCorrectAnswer) {
             backgroundColor = '#4CAF50';
             borderColor = '#4CAF50';
-            borderWidth = 2;
+              textColor = 'white';
           } else if (isSelected) {
             backgroundColor = colors.primary + '20';
             borderColor = colors.primary;
-            borderWidth = 2;
+              textColor = colors.primary;
           }
 
           return (
             <TouchableOpacity
-              key={index}
+                key={optIdx}
               style={[
                 styles.optionButton,
                 {
                   backgroundColor,
                   borderColor,
-                  borderWidth,
-                },
-              ]}
-              onPress={() => handleAnswer(question, index)}
-              disabled={question.isAnswered}
-            >
-              <View
-                style={[
-                  styles.optionIndicator,
-                  {
-                    backgroundColor: (showFeedback || showCorrectAnswer)
-                      ? (isCorrect ? '#4CAF50' : '#F44336')
-                      : (isSelected ? colors.primary : colors.border)
+                    opacity: answered && !isSelected && !isCorrect ? 0.6 : 1,
                   },
                 ]}
+                onPress={() => answer(row, optIdx)}
+                disabled={answered}
               >
-                {(showFeedback || showCorrectAnswer) && isCorrect && (
-                  <Icon name="check" size={16} color="white" />
+                <View style={styles.optionContent}>
+                  <Text style={[styles.optionLetter, { color: textColor }]}>
+                    {String.fromCharCode(65 + optIdx)}.
+                  </Text>
+                  <Text style={[styles.optionText, { color: textColor }]}>{opt}</Text>
+                </View>
+                {(showFeedback || showCorrectAnswer) && (
+                  <Icon 
+                    name={isCorrect ? 'check' : 'close'} 
+                    size={16} 
+                    color="white" 
+                  />
                 )}
-                {showFeedback && isWrong && (
-                  <Icon name="close" size={16} color="white" />
-                )}
-                {!showFeedback && !showCorrectAnswer && isSelected && (
-                  <Icon name="check" size={16} color="white" />
-                )}
-              </View>
-
-              <Text style={[
-                styles.optionText,
-                {
-                  color: (showFeedback || showCorrectAnswer)
-                    ? 'white'
-                    : (isSelected ? colors.primary : colors.text)
-                },
-              ]}>
-                {String.fromCharCode(65 + index)}. {option}
-              </Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {question.isAnswered && question.explanation && (
-        <View style={[styles.explanationContainer, { backgroundColor: colors.primary + '10' }]}>
-          <Text style={[styles.explanationTitle, { color: colors.primary }]}>Explanation</Text>
-          <Text style={[styles.explanationText, { color: colors.text }]}>
-            {question.explanation}
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity onPress={() => like(row)} style={styles.actionButton}>
+            <Icon name="favorite" size={16} color={colors.textSecondary} />
+            <Text style={[styles.actionText, { color: colors.textSecondary }]}>
+              {row.likesCount || 0}
           </Text>
-        </View>
-      )}
+          </TouchableOpacity>
 
-      <View style={styles.questionFooter}>
-        <View style={styles.authorInfo}>
-          <Icon name="person" size={14} color={colors.textSecondary} />
-          <Text style={[styles.authorText, { color: colors.textSecondary }]}>
-            {question.author?.name || 'Anonymous'}
+          <TouchableOpacity onPress={() => share(row)} style={styles.actionButton}>
+            <Icon name="share" size={16} color={colors.textSecondary} />
+            <Text style={[styles.actionText, { color: colors.textSecondary }]}>
+              {row.sharesCount || 0}
           </Text>
-        </View>
-        <Text style={[styles.dateText, { color: colors.textSecondary }]}>
-          {new Date(question.createdAt).toLocaleDateString()}
+          </TouchableOpacity>
+
+          <View style={styles.actionButton}>
+            <Icon name="reply" size={16} color={colors.textSecondary} />
+            <Text style={[styles.actionText, { color: colors.textSecondary }]}>
+              {row.answersCount || 0}
         </Text>
       </View>
 
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: colors.background }]}
-          onPress={() => handleShare(question)}
-        >
-          <Icon name="share" size={16} color={colors.textSecondary} />
-          <Text style={[styles.actionText, { color: colors.textSecondary }]}>Share</Text>
+          <TouchableOpacity onPress={() => view(row)} style={styles.actionButton}>
+            <Icon name="visibility" size={16} color={colors.textSecondary} />
+            <Text style={[styles.actionText, { color: colors.textSecondary }]}>
+              {row.viewsCount || 0}
+            </Text>
         </TouchableOpacity>
       </View>
     </Card>
   );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
-        title="Community Questions"
-        showMenuButton={true}
-        
-        showThemeToggle={true}
-        onMenuPress={() => navigation.navigate('MainTabs', { screen: 'More' })}
-        
-        onThemeToggle={toggleTheme}
+        title={`Questions (${total})`}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
       />
 
       {/* Search Bar */}
@@ -351,61 +351,103 @@ const PublicQuestionsScreen = () => {
         <Icon name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
-          placeholder="Search questions..."
+          placeholder="Search by question, name, username, email..."
           placeholderTextColor={colors.textSecondary}
           value={searchTerm}
-          onChangeText={handleSearch}
+          onChangeText={setSearchTerm}
+          onSubmitEditing={() => {
+            if (isSearchActive) {
+              handleClearSearch();
+            } else {
+              handleSearch();
+            }
+          }}
         />
-        {searchTerm.length > 0 && (
-          <TouchableOpacity onPress={() => handleSearch('')}>
-            <Icon name="clear" size={20} color={colors.textSecondary} />
+        <TouchableOpacity
+          onPress={() => {
+            if (isSearchActive) {
+              handleClearSearch();
+            } else {
+              handleSearch();
+            }
+          }}
+          style={[
+            styles.searchButton,
+            { backgroundColor: isSearchActive ? colors.textSecondary : colors.primary }
+          ]}
+        >
+          <Text style={styles.searchButtonText}>
+            {isSearchActive ? 'Clear' : 'Search'}
+          </Text>
           </TouchableOpacity>
-        )}
       </View>
 
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={loading} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            🤔 Community Questions
-          </Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            Answer questions from the community and test your knowledge
+            Answer, like, share user questions
           </Text>
         </View>
 
         {/* Questions List */}
-        {questions.length > 0 ? (
+        {items.length > 0 && (
           <View style={styles.questionsList}>
-            {questions.map(renderQuestion)}
+            {items.map((row, idx) => renderQuestion(row, idx))}
           </View>
-        ) : !loading ? (
-          <View style={styles.emptyContainer}>
-            <Icon name="quiz" size={60} color={colors.textSecondary} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No questions found</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              {searchTerm ? 'Try adjusting your search terms' : 'Be the first to post a question!'}
+        )}
+
+        {/* Loading More Indicator */}
+        {loadingMore && (
+          <View style={styles.loadingMoreContainer}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.loadingMoreText, { color: colors.textSecondary }]}>
+              Loading more questions...
             </Text>
           </View>
-        ) : null}
+        )}
 
         {/* Load More Button */}
-        {hasMore && questions.length > 0 && (
+        {hasMore && items.length > 0 && !loadingMore && (
           <TouchableOpacity
             style={[styles.loadMoreButton, { backgroundColor: colors.primary }]}
-            onPress={() => setPage(prev => prev + 1)}
-            disabled={loading}
+            onPress={loadMore}
+            disabled={loadingMore}
           >
             <Text style={[styles.loadMoreText, { color: 'white' }]}>
-              {loading ? 'Loading...' : 'Load More'}
+              Load More Questions
             </Text>
           </TouchableOpacity>
+        )}
+
+        {/* End of Results Message */}
+        {!hasMore && items.length > 0 && (
+          <View style={styles.endContainer}>
+            <Text style={[styles.endText, { color: colors.textSecondary }]}>
+              🎉 You've reached the end!
+            </Text>
+            <Text style={[styles.endSubtext, { color: colors.textSecondary }]}>
+              No more questions to load
+            </Text>
+          </View>
+        )}
+
+        {/* Empty State */}
+        {!loading && items.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              📝 No questions found
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+              Try a different search term
+            </Text>
+          </View>
         )}
       </ScrollView>
     </View>
@@ -419,17 +461,12 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    margin: 16,
+    margin: 10,
     paddingHorizontal: 16,
-    paddingVertical: 2,
+    paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
   },
   searchIcon: {
     marginRight: 12,
@@ -438,17 +475,22 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
   },
+  searchButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  searchButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   scrollView: {
     flex: 1,
   },
   header: {
-    padding: 20,
+    paddingBottom: 10,
     alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 16,
@@ -456,7 +498,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   questionsList: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
+    gap: 4,
   },
   questionCard: {
     marginBottom: 16,
@@ -474,42 +517,49 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-  questionMeta: {
+  userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
-  questionCategory: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginRight: 8,
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F59E0B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
-  difficultyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  difficultyText: {
-    fontSize: 12,
+  avatarText: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  questionStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  userDetails: {
+    flex: 1,
   },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 12,
+  userName: {
+    fontSize: 16,
+    fontWeight: '600',
   },
-  statText: {
+  username: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  userLevel: {
     fontSize: 12,
-    marginLeft: 4,
+  },
+  timeAgo: {
+    fontSize: 12,
   },
   questionText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 16,
     lineHeight: 24,
+  },
+  serialNumber: {
+    fontWeight: 'bold',
   },
   optionsContainer: {
     marginBottom: 16,
@@ -517,83 +567,50 @@ const styles = StyleSheet.create({
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 12,
-    marginBottom: 8,
     borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 8,
   },
-  optionIndicator: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginRight: 12,
+  optionContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1,
+  },
+  optionLetter: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginRight: 8,
   },
   optionText: {
     fontSize: 16,
-    lineHeight: 20,
     flex: 1,
   },
-  explanationContainer: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  explanationTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 6,
-  },
-  explanationText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  questionFooter: {
+  actionsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  authorInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  authorText: {
-    fontSize: 12,
-    marginLeft: 4,
-  },
-  dateText: {
-    fontSize: 12,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-around',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
   },
   actionText: {
-    fontSize: 12,
+    fontSize: 14,
     marginLeft: 4,
   },
-  emptyContainer: {
+  loadingMoreContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 40,
+    justifyContent: 'center',
+    padding: 20,
   },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
+  loadingMoreText: {
+    marginLeft: 8,
+    fontSize: 16,
   },
   loadMoreButton: {
     margin: 16,
@@ -609,6 +626,32 @@ const styles = StyleSheet.create({
   loadMoreText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  endContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  endText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  endSubtext: {
+    fontSize: 14,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 

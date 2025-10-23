@@ -6,13 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
-import Card from '../../components/Card';
 import { showMessage } from 'react-native-flash-message';
 
 const SubcategoryDetailScreen = () => {
@@ -25,60 +26,57 @@ const SubcategoryDetailScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [error, setError] = useState('');
 
-  const subcategoryId = route.params?.subcategoryId || '';
+  const subcategoryId = route.params?.subcategoryId;
 
   useEffect(() => {
+    console.log('SubcategoryDetailScreen useEffect - subcategoryId:', subcategoryId);
+    if (!subcategoryId) {
+      console.log('No subcategoryId found, going back');
+      navigation.goBack();
+      return;
+    }
     fetchSubcategory();
-    fetchQuizzes();
-  }, [subcategoryId]);
+    fetchQuizzes(page);
+  }, [subcategoryId, page]);
 
   const fetchSubcategory = async () => {
     try {
-      // Try to get subcategory details from API
-      // Note: May need to implement getSubcategoryById in the API service
-      const response = await API.getCategories();
-      
-      // Fallback to get categories and find subcategory
-      // For now, we'll use a placeholder implementation
-      setSubcategory({
-        _id: subcategoryId,
-        name: 'Subcategory Details',
-        description: 'Quiz subcategory details',
-        categoryId: 'unknown',
-      });
+      console.log('Fetching subcategory for subcategoryId:', subcategoryId);
+      // Try to get subcategory from API
+      const response = await API.request('/api/student/subcategories');
+      console.log('All subcategories:', response);
+      if (response && Array.isArray(response)) {
+        const found = response.find(sub => sub._id === subcategoryId);
+        console.log('Found subcategory:', found);
+        setSubcategory(found || null);
+      } else {
+        setSubcategory(null);
+      }
     } catch (error) {
       console.error('Error fetching subcategory:', error);
+      setSubcategory(null);
     }
   };
 
   const fetchQuizzes = async (currentPage = 1) => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
-
-      if (currentPage === 1) {
-        const response = await API.getLevelBasedQuizzes({
-          subcategory: subcategoryId,
-          page: currentPage,
-          limit: 20,
-        });
-
-        if (response.success) {
-          setQuizzes(response.data || []);
-          setHasMore(response.pagination?.hasNextPage || false);
-        } else {
-          showMessage({
-            message: 'Failed to load quizzes',
-            type: 'danger',
-          });
-        }
+      console.log('Fetching quizzes for page:', currentPage, 'subcategory:', subcategoryId);
+      const res = await API.request(`/api/student/quizzes/level-based?subcategory=${subcategoryId}&page=${currentPage}&limit=9`);
+      console.log('Quizzes response:', res);
+      if (res.success) {
+        setQuizzes(res.data);
+        setTotalPages(res.pagination.totalPages);
+      } else {
+        setError('Failed to load quizzes');
       }
-    } catch (error) {
-      showMessage({
-        message: 'Error fetching quizzes',
-        type: 'danger',
-      });
+    } catch (err) {
+      console.error('Error fetching quizzes:', err);
+      setError('Failed to load quizzes');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -88,10 +86,11 @@ const SubcategoryDetailScreen = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     setPage(1);
+    await fetchSubcategory();
     await fetchQuizzes(1);
   };
 
-  const handleQuizPress = (quiz) => {
+  const handleQuizClick = (quiz) => {
     navigation.navigate('Quiz', { quizId: quiz._id });
   };
 
@@ -111,71 +110,58 @@ const SubcategoryDetailScreen = () => {
   const renderQuizCard = (quiz) => (
     <TouchableOpacity
       key={quiz._id}
-      onPress={() => handleQuizPress(quiz)}
+      onPress={() => handleQuizClick(quiz)}
+      style={[styles.quizCard, { backgroundColor: colors.surface }]}
     >
-      <Card style={[styles.quizCard, { backgroundColor: colors.surface }]}>
+      <View style={styles.quizContent}>
         <View style={styles.quizHeader}>
-          <Text
-            style={[styles.quizTitle, { color: colors.text }]}
-            numberOfLines={2}
-          >
+          <Text style={[styles.quizTitle, { color: colors.text }]} numberOfLines={2}>
             {quiz.title}
+            {quiz.isRecommended && <Icon name="star" size={16} color="#F59E0B" style={{ marginLeft: 8 }} />}
           </Text>
-          <View style={styles.quizScore}>
-            {quiz.bestScore && (
-              <Text style={[styles.bestScoreText, { color: colors.primary }]}>
-                Best: {quiz.bestScore}%
-              </Text>
-            )}
-            {quiz.isCompleted && (
-              <Icon name="check-circle" size={20} color={colors.success} />
-            )}
-          </View>
         </View>
-
+        
         {quiz.description && (
-          <Text
-            style={[styles.quizDescription, { color: colors.textSecondary }]}
-            numberOfLines={2}
-          >
+          <Text style={[styles.quizDescription, { color: colors.textSecondary }]} numberOfLines={2}>
             {quiz.description}
           </Text>
         )}
-
-        <View style={styles.quizInfo}>
-          <View style={styles.quizInfoItem}>
+        
+        <View style={styles.quizStats}>
+          <View style={styles.quizStat}>
             <Icon name="schedule" size={14} color={colors.textSecondary} />
-            <Text style={[styles.quizInfoText, { color: colors.textSecondary }]}>
-              {quiz.timeLimit || 30}m
+            <Text style={[styles.quizStatText, { color: colors.textSecondary }]}>
+              {quiz.timeLimit || 30} min
             </Text>
           </View>
-
-          <View style={styles.quizInfoItem}>
+          
+          <View style={styles.quizStat}>
             <Icon name="quiz" size={14} color={colors.textSecondary} />
-            <Text style={[styles.quizInfoText, { color: colors.textSecondary }]}>
-              {quiz.totalMarks || 'Variable'} Q
+            <Text style={[styles.quizStatText, { color: colors.textSecondary }]}>
+              {quiz.totalMarks || 'Variable'} Qs
             </Text>
           </View>
 
-          {quiz.difficulty && (
-            <View
-              style={[
-                styles.difficultyBadge,
-                { backgroundColor: getDifficultyColor(quiz.difficulty) + '20' },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.difficultyText,
-                  { color: getDifficultyColor(quiz.difficulty) },
-                ]}
-              >
-                {quiz.difficulty}
-              </Text>
-            </View>
-          )}
+          <View style={styles.quizStat}>
+            <Icon name="layers" size={14} color={colors.textSecondary} />
+            <Text style={[styles.quizStatText, { color: colors.textSecondary }]}>
+              Level {quiz.requiredLevel}
+            </Text>
+          </View>
         </View>
-      </Card>
+
+        {quiz.difficulty && (
+          <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(quiz.difficulty) + '20' }]}>
+            <Text style={[styles.difficultyText, { color: getDifficultyColor(quiz.difficulty) }]}>
+              {quiz.difficulty}
+            </Text>
+          </View>
+        )}
+
+        <TouchableOpacity style={styles.startQuizButton} onPress={() => handleQuizClick(quiz)}>
+          <Text style={styles.startQuizText}>Start Quiz</Text>
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 
@@ -193,7 +179,7 @@ const SubcategoryDetailScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
-        title="Subcategory Detail"
+        title={subcategory?.name || "Subcategory"}
         showMenuButton={false}
         onBackPress={() => navigation.goBack()}
       />
@@ -205,33 +191,120 @@ const SubcategoryDetailScreen = () => {
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Hero Section */}
         {subcategory && (
-          <View style={[styles.headerSection, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.subcategoryName, { color: colors.text }]}>
-              {subcategory.name}
-            </Text>
-            {subcategory.description && (
-              <Text style={[styles.subcategoryDescription, { color: colors.textSecondary }]}>
-                {subcategory.description}
-              </Text>
-            )}
-          </View>
+          <LinearGradient
+            colors={colors.isDark ? ['#1F2937', '#374151', '#4B5563'] : ['#92400E', '#C2410C', '#DC2626']}
+            style={styles.heroSection}
+          >
+            <View style={styles.heroContent}>
+              <Text style={styles.heroTitle}>{subcategory.name}</Text>
+              {subcategory.category && (
+                <Text style={styles.heroSubtitle}>
+                  Category: {subcategory.category.name}
+                </Text>
+              )}
+              {subcategory.description && (
+                <Text style={styles.heroDescription}>{subcategory.description}</Text>
+              )}
+              <View style={styles.heroTags}>
+                <View style={styles.heroTag}>
+                  <Text style={styles.heroTagText}>Take Quizzes</Text>
+                </View>
+                <View style={styles.heroTag}>
+                  <Text style={styles.heroTagText}>Test Knowledge</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
         )}
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Available Quizzes ({quizzes.length})
-          </Text>
-
-          {quizzes.length > 0 ? (
-            quizzes.map(renderQuizCard)
-          ) : (
+        <View style={styles.content}>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.text }]}>
+                Loading quizzes...
+              </Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorState}>
+              <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+            </View>
+          ) : quizzes.length === 0 ? (
             <View style={styles.emptyState}>
               <Icon name="quiz" size={48} color={colors.textSecondary} />
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                No quizzes available for this subcategory
+                No quizzes found for this subcategory.
               </Text>
             </View>
+          ) : (
+            <>
+              {/* Section Header */}
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleContainer}>
+                  <Icon name="quiz" size={24} color="#EF4444" />
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    Quizzes ({quizzes.length})
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => navigation.goBack()}
+                >
+                  <Icon name="arrow-back" size={20} color="white" />
+                  <Text style={styles.backButtonText}>Go Back</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Quizzes Grid */}
+              <View style={styles.quizzesGrid}>
+                {quizzes.map(renderQuizCard)}
+              </View>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <View style={styles.pagination}>
+                  <TouchableOpacity
+                    style={[styles.paginationButton, page === 1 && styles.paginationButtonDisabled]}
+                    onPress={() => setPage(Math.max(1, page - 1))}
+                    disabled={page === 1}
+                  >
+                    <Text style={[styles.paginationText, page === 1 && styles.paginationTextDisabled]}>
+                      Prev
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  {[...Array(totalPages)].map((_, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      style={[
+                        styles.paginationButton,
+                        page === idx + 1 && styles.paginationButtonActive
+                      ]}
+                      onPress={() => setPage(idx + 1)}
+                    >
+                      <Text style={[
+                        styles.paginationText,
+                        page === idx + 1 && styles.paginationTextActive
+                      ]}>
+                        {idx + 1}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                  
+                  <TouchableOpacity
+                    style={[styles.paginationButton, page === totalPages && styles.paginationButtonDisabled]}
+                    onPress={() => setPage(Math.min(totalPages, page + 1))}
+                    disabled={page === totalPages}
+                  >
+                    <Text style={[styles.paginationText, page === totalPages && styles.paginationTextDisabled]}>
+                      Next
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
           )}
         </View>
       </ScrollView>
@@ -243,103 +316,220 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
   scrollView: {
     flex: 1,
   },
-  headerSection: {
-    padding: 20,
-    marginBottom: 16,
-  },
-  subcategoryName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subcategoryDescription: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  section: {
+  
+  // Hero Section
+  heroSection: {
+    paddingVertical: 24,
     paddingHorizontal: 20,
   },
-  sectionTitle: {
-    fontSize: 20,
+  heroContent: {
+    alignItems: 'center',
+  },
+  heroTitle: {
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 16,
-    marginHorizontal: 20,
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 12,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  quizCard: {
-    margin: 20,
-    padding: 16,
-    borderRadius: 12,
+  heroSubtitle: {
+    fontSize: 16,
+    color: '#FEF3C7',
+    textAlign: 'center',
+    marginBottom: 8,
   },
-  quizHeader: {
+  heroDescription: {
+    fontSize: 16,
+    color: '#FEF3C7',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  heroTags: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  heroTag: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  heroTagText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Content
+  content: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+
+  // Section Header
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 4,
+  },
+  backButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Loading & Error States
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+  },
+  errorState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
+
+  // Quizzes Grid
+  quizzesGrid: {
+    gap: 16,
+    marginBottom: 20,
+  },
+  quizCard: {
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+  },
+  quizContent: {
+    padding: 16,
+  },
+  quizHeader: {
     marginBottom: 12,
   },
   quizTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    flex: 1,
-    marginRight: 12,
-  },
-  quizScore: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  bestScoreText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginRight: 8,
   },
   quizDescription: {
     fontSize: 14,
     marginBottom: 12,
     lineHeight: 20,
   },
-  quizInfo: {
+  quizStats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 12,
+  },
+  quizStat: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 4,
   },
-  quizInfoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  quizInfoText: {
+  quizStatText: {
     fontSize: 12,
-    marginLeft: 4,
   },
   difficultyBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   difficultyText: {
     fontSize: 12,
     fontWeight: 'bold',
   },
-  emptyState: {
+  startQuizButton: {
+    backgroundColor: '#EF4444',
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
   },
-  emptyText: {
+  startQuizText: {
+    color: 'white',
     fontSize: 16,
-    marginTop: 12,
-    textAlign: 'center',
+    fontWeight: 'bold',
   },
-  loadingText: {
-    fontSize: 18,
-    marginTop: 16,
+
+  // Pagination
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 20,
+  },
+  paginationButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#E5E7EB',
+  },
+  paginationButtonActive: {
+    backgroundColor: '#EF4444',
+  },
+  paginationButtonDisabled: {
+    backgroundColor: '#F3F4F6',
+    opacity: 0.5,
+  },
+  paginationText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  paginationTextActive: {
+    color: 'white',
+  },
+  paginationTextDisabled: {
+    color: '#9CA3AF',
   },
 });
 

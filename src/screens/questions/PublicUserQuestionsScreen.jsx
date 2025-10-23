@@ -17,6 +17,8 @@ import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
+import ShareService from '../../services/ShareService';
+import { FRONTEND_URL } from '../../config/env';
 
 
 const PublicUserQuestionsScreen = () => {
@@ -28,21 +30,44 @@ const PublicUserQuestionsScreen = () => {
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [hasMore, setHasMore] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (isLoadMore = false) => {
+    if (isLoadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    
     try {
       const res = await API.getPublicUserQuestions({
-        page,
+        page: isLoadMore ? page : 1,
         limit,
         search: searchTerm,
       });
 
       if (res?.success) {
-        setItems(res.data || []);
+        const newItems = res.data || [];
+        
+        if (isLoadMore) {
+          // Append new items to existing list
+          setItems(prev => [...prev, ...newItems]);
+        } else {
+          // Replace items for fresh load
+          setItems(newItems);
+        }
+        
         setTotal(res.pagination?.total || 0);
+        setHasMore(newItems.length === limit);
+        
+        if (isLoadMore) {
+          setPage(prev => prev + 1);
+        } else {
+          setPage(2); // Next page will be 2
+        }
       }
     } catch (e) {
       console.error('Failed to load public questions', e);
@@ -51,7 +76,11 @@ const PublicUserQuestionsScreen = () => {
         type: 'danger',
       });
     } finally {
-      setLoading(false);
+      if (isLoadMore) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
   }, [page, limit, searchTerm]);
 
@@ -61,8 +90,15 @@ const PublicUserQuestionsScreen = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await load();
+    setPage(1);
+    setHasMore(true);
+    await load(false);
     setRefreshing(false);
+  };
+
+  const loadMore = async () => {
+    if (!hasMore || loadingMore) return;
+    await load(true);
   };
 
   const answer = async (q, idx) => {
@@ -120,7 +156,7 @@ const PublicUserQuestionsScreen = () => {
 
   const share = async (q) => {
     try {
-      await API.shareUserQuestion(q._id);
+      await ShareService.shareUserQuestion(q, FRONTEND_URL);
       setItems(prev =>
         prev.map(it =>
           it._id === q._id
@@ -304,8 +340,6 @@ const PublicUserQuestionsScreen = () => {
     );
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar
@@ -334,7 +368,8 @@ const PublicUserQuestionsScreen = () => {
             <TouchableOpacity
               onPress={() => {
                 setPage(1);
-                load();
+                setHasMore(true);
+                load(false);
               }}
               style={[styles.searchButton, { backgroundColor: colors.primary }]}
             >
@@ -364,45 +399,45 @@ const PublicUserQuestionsScreen = () => {
           </View>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Card style={[styles.paginationCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.paginationInfo, { color: colors.textSecondary }]}>
-              Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} questions
+        {/* Load More Button */}
+        {hasMore && items.length > 0 && (
+          <Card style={[styles.loadMoreCard, { backgroundColor: colors.surface }]}>
+            <TouchableOpacity
+              onPress={loadMore}
+              disabled={loadingMore}
+              style={[
+                styles.loadMoreButton,
+                {
+                  backgroundColor: loadingMore ? colors.textSecondary : colors.primary,
+                  opacity: loadingMore ? 0.7 : 1,
+                },
+              ]}
+            >
+              {loadingMore ? (
+                <View style={styles.loadingMoreContainer}>
+                  <Icon name="refresh" size={16} color="white" />
+                  <Text style={styles.loadMoreButtonText}>Loading...</Text>
+                </View>
+              ) : (
+                <View style={styles.loadMoreContainer}>
+                  <Icon name="expand-more" size={20} color="white" />
+                  <Text style={styles.loadMoreButtonText}>Load More Questions</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            
+            <Text style={[styles.loadMoreInfo, { color: colors.textSecondary }]}>
+              Showing {items.length} of {total} questions
             </Text>
-            <View style={styles.paginationButtons}>
-              <TouchableOpacity
-                disabled={page <= 1}
-                style={[
-                  styles.paginationButton,
-                  {
-                    backgroundColor: page <= 1 ? colors.textSecondary : colors.primary,
-                    opacity: page <= 1 ? 0.5 : 1,
-                  },
-                ]}
-                onPress={() => setPage(p => p - 1)}
-              >
-                <Text style={styles.paginationButtonText}>Previous</Text>
-              </TouchableOpacity>
+          </Card>
+        )}
 
-              <Text style={[styles.pageInfo, { color: colors.text }]}>
-                Page {page} of {totalPages}
-              </Text>
-
-              <TouchableOpacity
-                disabled={page >= totalPages}
-                style={[
-                  styles.paginationButton,
-                  {
-                    backgroundColor: page >= totalPages ? colors.textSecondary : colors.primary,
-                    opacity: page >= totalPages ? 0.5 : 1,
-                  },
-                ]}
-                onPress={() => setPage(p => p + 1)}
-              >
-                <Text style={styles.paginationButtonText}>Next</Text>
-              </TouchableOpacity>
-            </View>
+        {/* End of List Message */}
+        {!hasMore && items.length > 0 && (
+          <Card style={[styles.endCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.endText, { color: colors.textSecondary }]}>
+              🎉 You've reached the end! All {total} questions loaded.
+            </Text>
           </Card>
         )}
       </ScrollView>
@@ -550,34 +585,49 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
   },
-  paginationCard: {
+  loadMoreCard: {
     margin: 20,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
-  paginationInfo: {
-    fontSize: 14,
+  loadMoreButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
     marginBottom: 12,
+    minWidth: 200,
   },
-  paginationButtons: {
+  loadMoreContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'center',
   },
-  paginationButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  loadingMoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  paginationButtonText: {
+  loadMoreButtonText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
+    marginLeft: 8,
   },
-  pageInfo: {
+  loadMoreInfo: {
     fontSize: 14,
-    fontWeight: '600',
+    textAlign: 'center',
+  },
+  endCard: {
+    margin: 20,
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  endText: {
+    fontSize: 16,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
 

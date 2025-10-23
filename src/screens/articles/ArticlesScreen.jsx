@@ -17,6 +17,8 @@ import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
+import { FRONTEND_URL } from '../../config/env';
+import ShareService from '../../services/ShareService';
 
 const { width } = Dimensions.get('window');
 
@@ -128,13 +130,23 @@ const ArticlesScreen = () => {
 
   const handleShare = async (articleId) => {
     try {
-      await API.shareArticle(articleId);
-      showMessage({
-        message: 'Article shared successfully!',
-        type: 'success',
-      });
+      // Find the article to get its details
+      const article = articles.find(a => a._id === articleId);
+      if (!article) return;
+
+      const result = await ShareService.shareArticle(article, FRONTEND_URL);
+      if (result.success) {
+        showMessage({
+          message: 'Article shared successfully!',
+          type: 'success',
+        });
+      }
     } catch (error) {
       console.error('Error sharing article:', error);
+      showMessage({
+        message: 'Failed to share article',
+        type: 'danger',
+      });
     }
   };
 

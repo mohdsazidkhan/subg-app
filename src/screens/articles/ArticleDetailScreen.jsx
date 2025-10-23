@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Image,
   Linking,
-  Share,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -17,6 +16,9 @@ import API from '../../services/api';
 import { showMessage } from 'react-native-flash-message';
 import TopBar from '../../components/TopBar';
 import { API_URL } from '../../config/env';
+import HtmlContentRenderer from '../../components/HtmlContentRenderer';
+import ShareService from '../../services/ShareService';
+import { FRONTEND_URL } from '../../config/env';
 
 
 const ArticleDetailScreen = () => {
@@ -41,8 +43,13 @@ const ArticleDetailScreen = () => {
 
       if (response.success) {
         setArticle(response.data);
-        // Increment view count
-        await API.incrementArticleView(articleId);
+        // Increment view count using the article's _id (ObjectId)
+        try {
+          await API.incrementArticleView(response.data._id);
+        } catch (viewError) {
+          // Don't fail the entire article load if view increment fails
+          console.warn('Failed to increment article view count:', viewError);
+        }
       }
     } catch (error) {
       console.error('Error fetching article:', error);
@@ -78,24 +85,6 @@ const ArticleDetailScreen = () => {
     }
   };
 
-  const handleShare = async () => {
-    if (!article) return;
-
-    try {
-      await API.shareArticle(article._id);
-
-      const shareOptions = {
-        message: `Check out this article: ${article.title}`,
-        url: `${API_URL.replace(/\/$/, '')}/articles/${article._id}`,
-        title: article.title,
-      };
-
-      await Share.share(shareOptions);
-    } catch (error) {
-      console.error('Error sharing article:', error);
-    }
-  };
-
   const handleTagPress = (tag) => {
     // Navigate to articles filtered by tag
     navigation.navigate('Articles', {
@@ -110,15 +99,6 @@ const ArticleDetailScreen = () => {
       filter: 'category',
       value: categoryId,
     });
-  };
-
-  const formatContent = (content) => {
-    // Simple content formatting - in a real app, you might use a markdown renderer
-    return content.split('\n').map((paragraph, index) => (
-      <Text key={index} style={[styles.contentText, { color: colors.text }]}>
-        {paragraph}
-      </Text>
-    ));
   };
 
   if (loading) {
@@ -235,7 +215,11 @@ const ArticleDetailScreen = () => {
 
         {/* Article Content */}
         <View style={[styles.content, { backgroundColor: colors.surface }]}>
-          <View style={styles.contentContainer}>{formatContent(article.content)}</View>
+          <HtmlContentRenderer 
+            content={article.content}
+            textColor={colors.text}
+            style={styles.contentContainer}
+          />
         </View>
 
         {/* Action Buttons */}
@@ -267,7 +251,22 @@ const ArticleDetailScreen = () => {
 
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: colors.primary }]}
-            onPress={handleShare}
+            onPress={async () => {
+              try {
+                const result = await ShareService.shareArticle(article, FRONTEND_URL);
+                if (result.success) {
+                  showMessage({
+                    message: 'Article shared successfully!',
+                    type: 'success',
+                  });
+                }
+              } catch (error) {
+                showMessage({
+                  message: 'Failed to share article',
+                  type: 'danger',
+                });
+              }
+            }}
           >
             <Icon name="share" size={20} color="white" />
             <Text style={[styles.actionText, { color: 'white' }]}>Share</Text>
@@ -310,36 +309,36 @@ const styles = StyleSheet.create({
     height: 200,
   },
   header: {
-    padding: 20,
-    borderRadius: 16,
-    margin: 16,
+    padding: 10,
+    borderRadius: 8,
+    marginVertical: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 4,
     elevation: 4,
   },
   headerContent: {
     flex: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 12,
-    lineHeight: 32,
-  },
-  excerpt: {
-    fontSize: 16,
-    marginBottom: 20,
     lineHeight: 24,
   },
+  excerpt: {
+    fontSize: 14,
+    marginBottom: 10,
+    lineHeight: 18,
+  },
   authorSection: {
-    marginBottom: 16,
+    marginBottom: 10,
   },
   authorInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   authorAvatar: {
     width: 40,
@@ -387,7 +386,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   tagsSection: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   tagsLabel: {
     fontSize: 14,
@@ -410,14 +409,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   content: {
-    padding: 20,
-    borderRadius: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowRadius: 4,
     elevation: 2,
   },
   contentContainer: {
