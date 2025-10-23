@@ -14,6 +14,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
+import QuizStartModal from '../../components/QuizStartModal';
 import { showMessage } from 'react-native-flash-message';
 
 const SubcategoryDetailScreen = () => {
@@ -28,6 +29,8 @@ const SubcategoryDetailScreen = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState('');
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
 
   const subcategoryId = route.params?.subcategoryId;
 
@@ -91,7 +94,20 @@ const SubcategoryDetailScreen = () => {
   };
 
   const handleQuizClick = (quiz) => {
-    navigation.navigate('Quiz', { quizId: quiz._id });
+    setSelectedQuiz(quiz);
+    setShowQuizModal(true);
+  };
+
+  const handleConfirmQuizStart = () => {
+    setShowQuizModal(false);
+    if (selectedQuiz) {
+      navigation.navigate('Quiz', { quizId: selectedQuiz._id });
+    }
+  };
+
+  const handleCancelQuizStart = () => {
+    setShowQuizModal(false);
+    setSelectedQuiz(null);
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -308,6 +324,13 @@ const SubcategoryDetailScreen = () => {
           )}
         </View>
       </ScrollView>
+
+      <QuizStartModal
+        visible={showQuizModal}
+        quiz={selectedQuiz}
+        onClose={handleCancelQuizStart}
+        onConfirm={handleConfirmQuizStart}
+      />
     </View>
   );
 };

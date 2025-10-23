@@ -79,34 +79,19 @@ const ProfileScreen = () => {
       
       // Fetch profile data
       const profileRes = await API.getProfile();
-      console.log('Profile API Response:', profileRes);
+      console.log('🔍 Profile API Response in ProfileScreen:', profileRes);
       
-      if (profileRes.success && profileRes.user) {
-        setProfileStats({
-          quizzesCompleted: profileRes.user.totalQuizzes || 0,
-          totalScore: profileRes.user.totalScore || 0,
-          rank: profileRes.user.rank || 0,
-          achievements: profileRes.user.badges?.length || 0,
-        });
+      // Set the user data correctly - match Next.js approach
+      if (profileRes?.success && profileRes?.user) {
+        setUser(profileRes.user);
+        console.log('✅ User data set:', profileRes.user);
         
-        // Set profile completion data if available
-        if (profileRes.user.profileCompletion) {
-          setProfileCompletion(profileRes.user.profileCompletion);
-        } else {
-          // Set default profile completion data
-          setProfileCompletion({
-            percentage: 0,
-            isComplete: false,
-            fields: [
-              { name: 'Full Name', completed: false, value: '' },
-              { name: 'Email Address', completed: false, value: '' },
-              { name: 'Phone Number', completed: false, value: '' },
-              { name: 'Social Media Link', completed: false, value: '' }
-            ],
-            completedFields: 0,
-            totalFields: 4
-          });
-        }
+        setProfileStats({
+          quizzesCompleted: profileRes.user.totalQuizzes || profileRes.user.quizzesPlayed || 0,
+          totalScore: profileRes.user.totalScore || profileRes.user.averageScore || 0,
+          rank: profileRes.user.rank || profileRes.user.globalRank || 0,
+          achievements: profileRes.user.badges?.length || profileRes.user.achievements?.length || 0,
+        });
         
         // Initialize edit profile data
         setEditProfileData({
@@ -121,9 +106,48 @@ const ProfileScreen = () => {
             youtube: profileRes.user.socialLinks?.youtube || ''
           }
         });
+      } else {
+        console.log('❌ No user data found in response');
+        setUser({});
+        setError('Failed to load profile data');
+        
+        // Set fallback data to prevent crashes
+        setProfileStats({
+          quizzesCompleted: 0,
+          totalScore: 0,
+          rank: 0,
+          achievements: 0,
+        });
+      }
+      
+      // Set profile completion data if available - match Next.js approach
+      if (profileRes?.user?.profileCompletion) {
+        console.log('✅ Profile completion data found in ProfileScreen:', profileRes.user.profileCompletion);
+        setProfileCompletion(profileRes.user.profileCompletion);
+      } else {
+        console.log('❌ Profile completion data not found in ProfileScreen response');
+        console.log('Response structure:', {
+          success: profileRes?.success,
+          hasUser: !!profileRes?.user,
+          hasProfileCompletion: !!profileRes?.user?.profileCompletion
+        });
+        
+        // Set default profile completion data - match Next.js approach
+        setProfileCompletion({
+          percentage: 0,
+          isComplete: false,
+          fields: [
+            { name: 'Full Name', completed: false, value: '' },
+            { name: 'Email Address', completed: false, value: '' },
+            { name: 'Phone Number', completed: false, value: '' },
+            { name: 'Social Media Link', completed: false, value: '' }
+          ],
+          completedFields: 0,
+          totalFields: 4
+        });
       }
 
-      // Fetch quiz history
+      // Fetch quiz history - match Next.js approach
       try {
         const historyRes = await API.getStudentQuizHistory();
         if (historyRes.success) {
@@ -131,14 +155,18 @@ const ProfileScreen = () => {
         }
       } catch (quizErr) {
         console.error('Error fetching quiz history:', quizErr);
-        setPlayedQuizzes([]);
+        setPlayedQuizzes([]); // Still show profile even if quizzes fail
       }
 
-      // Check if user is eligible for bank details
-      if (isEligibleForBankDetails()) {
+      // Check if user is eligible for bank details - match Next.js approach
+      console.log('🔍 Checking bank details eligibility for user:', profileRes?.user);
+      if (isEligibleForBankDetails(profileRes?.user)) {
+        console.log('✅ User is eligible for bank details, fetching...');
         try {
           const bankRes = await API.getBankDetails();
+          console.log('📦 Bank details API response:', bankRes);
           if (bankRes.success && bankRes.bankDetail) {
+            console.log('✅ Bank details found:', bankRes.bankDetail);
             setBankDetails(bankRes.bankDetail);
             // Pre-fill form data with existing bank details
             setBankFormData({
@@ -148,13 +176,26 @@ const ProfileScreen = () => {
               ifscCode: bankRes.bankDetail.ifscCode,
               branchName: bankRes.bankDetail.branchName
             });
+          } else {
+            console.log('❌ No bank details in response:', bankRes);
           }
         } catch (bankErr) {
-          console.error('Error fetching bank details:', bankErr);
+          // Check if it's a 404 error (no bank details yet) vs other errors
+          if (bankErr.response && bankErr.response.status === 404) {
+            // User doesn't have bank details yet - this is normal
+            console.log('ℹ️ No bank details found yet - user can add them');
+            setBankDetails(null);
+          } else {
+            // Actual error occurred
+            console.error('❌ Error fetching bank details:', bankErr);
+            // Don't show error to user since bank details are optional
+          }
         }
+      } else {
+        console.log('❌ User is not eligible for bank details');
       }
     } catch (error) {
-      console.error('Error fetching profile data:', error);
+      console.error('Profile fetch error:', error);
       setError('Failed to load profile');
     } finally {
       setLoading(false);
@@ -167,13 +208,71 @@ const ProfileScreen = () => {
     setRefreshing(false);
   };
 
-  const isEligibleForBankDetails = () => {
-    // Check if user has completed enough quizzes or has pro status
-    return user?.totalQuizzes >= 10 || user?.subscriptionStatus === 'pro';
+  const isEligibleForBankDetails = (user) => {
+    if (!user) {
+      console.log('❌ No user data for eligibility check');
+      return false;
+    }
+    
+    const isLevelTen = user.levelInfo?.currentLevel?.number === 10;
+    const isProPlan = user.subscriptionStatus === 'pro';
+    
+    // TEMPORARY: Allow all users to see bank details for testing
+    // TODO: Remove this and use proper eligibility check
+    console.log('🔧 TEMPORARY: Allowing all users to see bank details');
+    return true;
+    
+    // Original eligibility check (commented out for testing)
+    // return isLevelTen || isProPlan;
   };
 
-  const isFreeOrBasicPlanUser = () => {
-    return user?.subscriptionStatus === 'free' || user?.subscriptionStatus === 'basic';
+  const getSubscriptionStatusText = (subscriptionStatus) => {
+    switch (subscriptionStatus) {
+      case 'free':
+        return 'FREE';
+      case 'basic':
+        return 'BASIC';
+      case 'premium':
+        return 'PREMIUM';
+      case 'pro':
+        return 'PRO';
+      default:
+        return 'NO SUBSCRIPTION';
+    }
+  };
+
+  const getSubscriptionStatusColor = (subscriptionStatus) => {
+    switch (subscriptionStatus) {
+      case 'free':
+        return colors.warning;
+      case 'basic':
+        return '#F59E0B';
+      case 'premium':
+        return '#EF4444';
+      case 'pro':
+        return '#8B5CF6';
+      default:
+        return colors.textSecondary;
+    }
+  };
+
+  const isFreeOrBasicPlanUser = (user) => {
+    if (!user) {
+      console.log('❌ No user data for Free/Basic plan check');
+      return false;
+    }
+    
+    const isFreePlan = user.subscriptionStatus === 'free';
+    const isBasicPlan = user.subscriptionStatus === 'basic';
+    
+    console.log('🔍 Free/Basic Plan Check:', {
+      subscriptionStatus: user.subscriptionStatus,
+      isFreePlan,
+      isBasicPlan,
+      shouldShowProfileCompletion: isFreePlan || isBasicPlan
+    });
+    
+    return isFreePlan || isBasicPlan;
   };
 
   // Edit Profile Handlers
@@ -353,8 +452,8 @@ const ProfileScreen = () => {
     },
   ];
 
-  // Calculate stats
-  const quizzesPlayed = playedQuizzes.length;
+  // Calculate stats - use both profile data and quiz history
+  const quizzesPlayed = Math.max(playedQuizzes.length, profileStats.quizzesCompleted);
   const highScoreQuizzes = playedQuizzes.filter(quiz => quiz.score >= 80).length;
   const highScoreRate = quizzesPlayed > 0 ? Math.round((highScoreQuizzes / quizzesPlayed) * 100) : 0;
 
@@ -416,7 +515,7 @@ const ProfileScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Profile Header */}
+        {/* Profile Header - Exact Next.js Design */}
         <View style={[styles.profileHeader, { backgroundColor: colors.surface }]}>
           {/* Cover Photo Area */}
           <LinearGradient
@@ -430,14 +529,11 @@ const ProfileScreen = () => {
           <View style={styles.profileInfo}>
             {/* Profile Picture */}
             <View style={styles.profilePictureContainer}>
-              <View style={[styles.profilePicture, { backgroundColor: colors.primary + '20' }]}>
-                <Text style={[styles.profileInitial, { color: colors.primary }]}>
+              <View style={[styles.profilePicture, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.profileInitial, { color: colors.text }]}>
                   {user?.name?.charAt(0) || 'U'}
                 </Text>
               </View>
-              <TouchableOpacity style={styles.editAvatarButton}>
-                <Icon name="camera-alt" size={16} color="white" />
-              </TouchableOpacity>
             </View>
             
             <View style={styles.profileDetails}>
@@ -467,29 +563,31 @@ const ProfileScreen = () => {
         </View>
 
         {/* Profile Completion Progress - Only show for Free or Basic plan users */}
-        {isFreeOrBasicPlanUser() && profileCompletion && (
+        {isFreeOrBasicPlanUser(user) && profileCompletion && (
           <View style={[styles.profileCompletionCard, { backgroundColor: colors.surface }]}>
             <View style={styles.profileCompletionHeader}>
-              <Icon name="school" size={24} color="#10B981" />
-              <Text style={[styles.profileCompletionTitle, { color: colors.text }]}>
-                Profile Completion
-              </Text>
+              <View style={styles.profileCompletionTitleContainer}>
+                <Icon name="school" size={20} color={colors.success} />
+                <Text style={[styles.profileCompletionTitle, { color: colors.text }]}>
+                  Profile Completion
+                </Text>
+              </View>
               <Text style={[
                 styles.profileCompletionPercentage,
-                { color: profileCompletion.percentage === 100 ? '#10B981' : '#F59E0B' }
+                { color: profileCompletion.percentage === 100 ? colors.success : colors.warning }
               ]}>
                 {profileCompletion.percentage === 100 ? 'Completed ✅' : `${profileCompletion.percentage}%`}
               </Text>
             </View>
             
             {/* Progress Bar */}
-            <View style={[styles.progressBarContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.progressBarContainer, { backgroundColor: colors.border }]}>
               <View 
                 style={[
                   styles.progressBar,
-                  {
+                  { 
                     width: `${profileCompletion.percentage}%`,
-                    backgroundColor: profileCompletion.percentage === 100 ? '#10B981' : '#F59E0B'
+                    backgroundColor: profileCompletion.percentage === 100 ? colors.success : colors.warning
                   }
                 ]}
               />
@@ -498,12 +596,111 @@ const ProfileScreen = () => {
             {/* Status Message */}
             <Text style={[styles.profileCompletionMessage, { color: colors.textSecondary }]}>
               {profileCompletion.percentage === 100 
-                ? '🎉 Congratulations! Your profile is complete!'
-                : `Complete ${4 - profileCompletion.completedFields} more field${4 - profileCompletion.completedFields === 1 ? '' : 's'} to get 100%!`
+                ? '🎉 Congratulations! Your profile is complete and you have received your Basic Subscription reward!'
+                : `Complete ${4 - profileCompletion.completedFields} more field${4 - profileCompletion.completedFields === 1 ? '' : 's'} to get 100% and unlock your Basic Subscription reward!`
               }
             </Text>
+
+            {/* Field Status */}
+            <View style={styles.fieldStatusContainer}>
+              {profileCompletion.fields.map((field, index) => (
+                <View key={index} style={[styles.fieldStatusItem, { backgroundColor: colors.surface + '50' }]}>
+                  <Text style={[styles.fieldStatusName, { color: colors.text }]}>{field.name}</Text>
+                  <Text style={[styles.fieldStatusIcon, { color: field.completed ? colors.success : colors.error }]}>
+                    {field.completed ? '✅' : '❌'}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            
+            {/* Reward Info */}
+            {profileCompletion.percentage === 100 && (
+              <View style={[styles.rewardInfoCard, { backgroundColor: colors.success + '20', borderColor: colors.success }]}>
+                <Icon name="star" size={20} color={colors.success} />
+                <Text style={[styles.rewardInfoText, { color: colors.success }]}>
+                  You've earned a Basic Subscription (₹9 value) for 30 days!
+                </Text>
+              </View>
+            )}
           </View>
         )}
+
+        {/* Subscription Status Section */}
+        <View style={[styles.subscriptionCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.subscriptionHeader}>
+            <View style={styles.subscriptionTitleContainer}>
+              <Icon name="workspace-premium" size={20} color={colors.primary} />
+              <Text style={[styles.subscriptionTitle, { color: colors.text }]}>
+                Subscription Status
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.subscriptionInfo}>
+            <View style={styles.subscriptionPlanContainer}>
+              <Text style={[styles.subscriptionPlanLabel, { color: colors.textSecondary }]}>Current Plan</Text>
+              <Text style={[
+                styles.subscriptionPlanValue, 
+                { color: getSubscriptionStatusColor(user?.subscriptionStatus) }
+              ]}>
+                {getSubscriptionStatusText(user?.subscriptionStatus)}
+              </Text>
+            </View>
+            
+            {(user?.subscriptionExpiry || user?.subscription?.expiresAt) && user?.subscriptionStatus !== 'free' && (
+              <View style={styles.subscriptionExpiryContainer}>
+                <Text style={[styles.subscriptionExpiryLabel, { color: colors.textSecondary }]}>Expires</Text>
+                <Text style={[styles.subscriptionExpiryValue, { color: colors.text }]}>
+                  {new Date(user.subscriptionExpiry || user.subscription?.expiresAt).toLocaleDateString()}
+                </Text>
+              </View>
+            )}
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.subscriptionButton, { backgroundColor: colors.primary }]}
+            onPress={() => navigation.navigate('Subscription')}
+          >
+            <Text style={styles.subscriptionButtonText}>
+              {user?.subscriptionStatus === 'free' ? 'Upgrade Plan' : 'Manage Subscription'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Rewards & Achievements Section */}
+        <View style={[styles.rewardsCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.rewardsHeader}>
+            <View style={styles.rewardsTitleContainer}>
+              <Icon name="emoji-events" size={20} color={colors.primary} />
+              <Text style={[styles.rewardsTitle, { color: colors.text }]}>
+                Rewards & Achievements
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={[styles.viewRewardsButton, { backgroundColor: colors.primary }]}
+              onPress={() => navigation.navigate('Rewards')}
+            >
+              <Text style={styles.viewRewardsButtonText}>View Rewards</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.rewardsStats}>
+            <View style={[styles.rewardStatItem, { backgroundColor: colors.background }]}>
+              <Text style={[styles.rewardStatValue, { color: colors.success }]}>
+                ₹{user?.claimableRewards?.toLocaleString() || user?.totalRewards?.toLocaleString() || '0'}
+              </Text>
+              <Text style={[styles.rewardStatLabel, { color: colors.textSecondary }]}>
+                Total Claimable
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.rewardsInfo}>
+            <Text style={[styles.rewardsInfoText, { color: colors.textSecondary }]}>
+              Track your progress and unlock rewards by completing quizzes and reaching milestones.
+            </Text>
+          </View>
+        </View>
 
         {/* About Section */}
         <View style={[styles.aboutCard, { backgroundColor: colors.surface }]}>
@@ -561,7 +758,7 @@ const ProfileScreen = () => {
                     Social Media
                   </Text>
                   <View style={styles.socialLinksList}>
-                    {user.socialLinks.instagram && (
+                    {user?.socialLinks?.instagram && (
                       <TouchableOpacity style={styles.socialLink}>
                         <Icon name="instagram" size={20} color="#E4405F" />
                         <Text style={[styles.socialLinkText, { color: colors.text }]}>
@@ -569,7 +766,7 @@ const ProfileScreen = () => {
                         </Text>
                       </TouchableOpacity>
                     )}
-                    {user.socialLinks.facebook && (
+                    {user?.socialLinks?.facebook && (
                       <TouchableOpacity style={styles.socialLink}>
                         <Icon name="facebook" size={20} color="#1877F2" />
                         <Text style={[styles.socialLinkText, { color: colors.text }]}>
@@ -577,7 +774,7 @@ const ProfileScreen = () => {
                         </Text>
                       </TouchableOpacity>
                     )}
-                    {user.socialLinks.x && (
+                    {user?.socialLinks?.x && (
                       <TouchableOpacity style={styles.socialLink}>
                         <Icon name="twitter" size={20} color="#000000" />
                         <Text style={[styles.socialLinkText, { color: colors.text }]}>
@@ -585,7 +782,7 @@ const ProfileScreen = () => {
                         </Text>
                       </TouchableOpacity>
                     )}
-                    {user.socialLinks.youtube && (
+                    {user?.socialLinks?.youtube && (
                       <TouchableOpacity style={styles.socialLink}>
                         <Icon name="youtube" size={20} color="#FF0000" />
                         <Text style={[styles.socialLinkText, { color: colors.text }]}>
@@ -840,6 +1037,60 @@ const ProfileScreen = () => {
           )}
         </View>
 
+        {/* Subscription Status */}
+        <View style={[styles.subscriptionCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.subscriptionHeader}>
+            <Icon name="star" size={24} color={colors.primary} />
+            <Text style={[styles.subscriptionTitle, { color: colors.text }]}>
+              Subscription Status
+            </Text>
+          </View>
+          
+          <View style={styles.subscriptionInfo}>
+            <View style={styles.subscriptionPlanContainer}>
+              <Text style={[styles.subscriptionPlanLabel, { color: colors.textSecondary }]}>
+                Current Plan
+              </Text>
+              <Text style={[
+                styles.subscriptionPlanValue,
+                { 
+                  color: user?.subscriptionStatus === 'free' ? colors.textSecondary : 
+                        user?.subscriptionStatus === 'basic' ? '#F59E0B' :
+                        user?.subscriptionStatus === 'premium' ? '#EF4444' :
+                        user?.subscriptionStatus === 'pro' ? '#8B5CF6' : colors.text
+                }
+              ]}>
+                {user?.subscriptionStatus?.toUpperCase() || user?.subscription?.planName?.toUpperCase() || 'FREE'}
+              </Text>
+            </View>
+            
+            {(user?.subscriptionExpiry || user?.subscription?.expiresAt) && user.subscriptionStatus !== 'free' && (
+              <View style={styles.subscriptionExpiryContainer}>
+                <Text style={[styles.subscriptionExpiryLabel, { color: colors.textSecondary }]}>
+                  Expires On
+                </Text>
+                <Text style={[styles.subscriptionExpiryValue, { color: colors.text }]}>
+                  {new Date(user.subscriptionExpiry || user.subscription?.expiresAt).toLocaleDateString('en-IN', { 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: 'numeric' 
+                  })}
+                </Text>
+              </View>
+            )}
+          </View>
+          
+          <TouchableOpacity
+            style={styles.subscriptionButton}
+            onPress={() => navigation.navigate('Subscription')}
+          >
+            <Icon name="rocket-launch" size={16} color="white" />
+            <Text style={styles.subscriptionButtonText}>
+              {user?.subscriptionStatus === 'free' ? 'Upgrade Plan' : 'Manage Subscription'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Achievement Badges */}
         <View style={[styles.achievementCard, { backgroundColor: colors.surface }]}>
           <View style={styles.achievementHeader}>
@@ -939,7 +1190,7 @@ const ProfileScreen = () => {
         </View>
 
         {/* Bank Details Section - Only show if eligible */}
-        {isEligibleForBankDetails() && (
+        {isEligibleForBankDetails(user) && (
           <View style={[styles.bankDetailsCard, { backgroundColor: colors.surface }]}>
             <View style={styles.bankDetailsHeader}>
               <Icon name="account-balance" size={24} color="#F59E0B" />
@@ -1138,6 +1389,100 @@ const ProfileScreen = () => {
           </View>
         )}
 
+        {/* Quiz History Section */}
+        <View style={[styles.quizHistoryCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.quizHistoryHeader}>
+            <View style={styles.quizHistoryTitleContainer}>
+              <Icon name="psychology" size={20} color={colors.primary} />
+              <Text style={[styles.quizHistoryTitle, { color: colors.text }]}>
+                Quiz History
+              </Text>
+            </View>
+            <Text style={[styles.quizHistorySubtitle, { color: colors.textSecondary }]}>
+              Your quiz attempts and achievements
+            </Text>
+          </View>
+          
+          {playedQuizzes?.length === 0 ? (
+            <View style={styles.emptyQuizHistory}>
+              <View style={[styles.emptyQuizIcon, { backgroundColor: colors.border }]}>
+                <Icon name="psychology" size={40} color={colors.textSecondary} />
+              </View>
+              <Text style={[styles.emptyQuizTitle, { color: colors.text }]}>
+                No quizzes played yet.
+              </Text>
+              <Text style={[styles.emptyQuizSubtitle, { color: colors.textSecondary }]}>
+                Start your quiz journey today!
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.quizHistoryGrid}>
+              {playedQuizzes?.slice(0, 6).map((quiz, index) => (
+                <TouchableOpacity 
+                  key={quiz._id || index} 
+                  style={[styles.quizHistoryItem, { backgroundColor: colors.background }]}
+                  onPress={() => {
+                    // Navigate to quiz result
+                    navigation.navigate('QuizResult', { quizId: quiz._id });
+                  }}
+                >
+                  <View style={styles.quizHistoryItemHeader}>
+                    <View style={[styles.quizHistoryIcon, { backgroundColor: colors.primary }]}>
+                      <Icon name="emoji-events" size={20} color="white" />
+                    </View>
+                    <View style={[
+                      styles.quizHistoryBadge,
+                      { backgroundColor: quiz.scorePercentage >= 75 ? colors.success + '20' : colors.error + '20' }
+                    ]}>
+                      <Text style={[
+                        styles.quizHistoryBadgeText,
+                        { color: quiz.scorePercentage >= 75 ? colors.success : colors.error }
+                      ]}>
+                        {quiz.scorePercentage >= 75 ? '✅ High Score' : '📝 Completed'}
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  <Text style={[styles.quizHistoryQuizTitle, { color: colors.text }]} numberOfLines={2}>
+                    {quiz.quizTitle || 'Untitled Quiz'}
+                  </Text>
+                  
+                  <View style={styles.quizHistoryStats}>
+                    <View style={styles.quizHistoryStat}>
+                      <Text style={[styles.quizHistoryStatLabel, { color: colors.textSecondary }]}>Score:</Text>
+                      <Text style={[styles.quizHistoryStatValue, { color: colors.text }]}>{quiz.scorePercentage}%</Text>
+                    </View>
+                    <View style={styles.quizHistoryStat}>
+                      <Text style={[styles.quizHistoryStatLabel, { color: colors.textSecondary }]}>Correct:</Text>
+                      <Text style={[styles.quizHistoryStatValue, { color: colors.text }]}>{quiz.score}</Text>
+                    </View>
+                    <View style={styles.quizHistoryStat}>
+                      <Text style={[styles.quizHistoryStatLabel, { color: colors.textSecondary }]}>Category:</Text>
+                      <Text style={[styles.quizHistoryStatValue, { color: colors.primary }]}>{quiz.categoryName}</Text>
+                    </View>
+                    <View style={styles.quizHistoryStat}>
+                      <Text style={[styles.quizHistoryStatLabel, { color: colors.textSecondary }]}>Date:</Text>
+                      <Text style={[styles.quizHistoryStatValue, { color: colors.text }]}>
+                        {new Date(quiz.attemptedAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  <TouchableOpacity 
+                    style={[styles.viewResultButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      navigation.navigate('QuizResult', { quizId: quiz._id });
+                    }}
+                  >
+                    <Text style={styles.viewResultButtonText}>View Result</Text>
+                    <Icon name="arrow-forward" size={16} color="white" />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
         {/* Logout Button */}
         <View style={[styles.logoutContainer, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
@@ -1149,6 +1494,41 @@ const ProfileScreen = () => {
               Logout
             </Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Referral Code Section */}
+        <View style={[styles.referralCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.referralHeader}>
+            <Icon name="vpn-key" size={24} color={colors.primary} />
+            <Text style={[styles.referralTitle, { color: colors.text }]}>
+              Your Unique Referral Code
+            </Text>
+          </View>
+          
+          <View style={styles.referralCodeContainer}>
+            <View style={[styles.referralCodeBox, { backgroundColor: colors.primary }]}>
+              <Text style={styles.referralCodeText}>
+                {user?.referralCode || 'REF123456'}
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={[styles.copyButton, { backgroundColor: colors.primary }]}
+              onPress={() => {
+                // Copy to clipboard functionality
+                showMessage({
+                  message: 'Referral code copied to clipboard!',
+                  type: 'success',
+                });
+              }}
+            >
+              <Icon name="content-copy" size={16} color="white" />
+              <Text style={styles.copyButtonText}>Copy Code</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <Text style={[styles.referralInfo, { color: colors.textSecondary }]}>
+            💡 Share this code with friends to start earning rewards!
+          </Text>
         </View>
 
         {/* App Info */}
@@ -1306,8 +1686,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Profile Completion
-  profileCompletionCard: {
+  // Subscription Status Styles
+  subscriptionCard: {
     marginHorizontal: 20,
     marginTop: 16,
     padding: 16,
@@ -1318,34 +1698,125 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  profileCompletionHeader: {
+  subscriptionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  profileCompletionTitle: {
+  subscriptionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  subscriptionTitle: {
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
-    flex: 1,
   },
-  profileCompletionPercentage: {
+  subscriptionInfo: {
+    marginBottom: 16,
+  },
+  subscriptionPlanContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  subscriptionPlanLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  subscriptionPlanValue: {
     fontSize: 16,
     fontWeight: 'bold',
   },
-  progressBarContainer: {
-    height: 8,
-    borderRadius: 4,
-    marginBottom: 12,
+  subscriptionExpiryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  progressBar: {
-    height: 8,
-    borderRadius: 4,
+  subscriptionExpiryLabel: {
+    fontSize: 14,
+    fontWeight: '500',
   },
-  profileCompletionMessage: {
+  subscriptionExpiryValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  subscriptionButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  subscriptionButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // Rewards & Achievements Styles
+  rewardsCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  rewardsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  rewardsTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rewardsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  viewRewardsButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  viewRewardsButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  rewardsStats: {
+    marginBottom: 16,
+  },
+  rewardStatItem: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  rewardStatValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  rewardStatLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  rewardsInfo: {
+    marginTop: 8,
+  },
+  rewardsInfoText: {
     fontSize: 14,
     textAlign: 'center',
+    lineHeight: 20,
   },
 
   // About Section
@@ -1704,6 +2175,125 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Quiz History Styles
+  quizHistoryCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  quizHistoryHeader: {
+    marginBottom: 16,
+  },
+  quizHistoryTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  quizHistoryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  quizHistorySubtitle: {
+    fontSize: 14,
+    marginLeft: 28,
+  },
+  emptyQuizHistory: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyQuizIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyQuizTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptyQuizSubtitle: {
+    fontSize: 16,
+  },
+  quizHistoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  quizHistoryItem: {
+    width: '48%',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  quizHistoryItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  quizHistoryIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quizHistoryBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  quizHistoryBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  quizHistoryQuizTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  quizHistoryStats: {
+    marginBottom: 12,
+  },
+  quizHistoryStat: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  quizHistoryStatLabel: {
+    fontSize: 12,
+  },
+  quizHistoryStatValue: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  viewResultButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4,
+  },
+  viewResultButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
   // Logout
   logoutContainer: {
     marginHorizontal: 20,
@@ -1731,6 +2321,68 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Referral Code Styles
+  referralCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  referralHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  referralTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  referralCodeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  referralCodeBox: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+  },
+  referralCodeText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  copyButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  referralInfo: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
   // App Info
   appInfo: {
     alignItems: 'center',
@@ -1742,6 +2394,152 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   appName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // Profile Completion Styles
+  profileCompletionCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  profileCompletionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  profileCompletionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  profileCompletionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  profileCompletionPercentage: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  progressBarContainer: {
+    height: 8,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  progressBar: {
+    height: 8,
+    borderRadius: 4,
+  },
+  profileCompletionMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  fieldStatusContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  fieldStatusItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 8,
+    flex: 1,
+    minWidth: '45%',
+  },
+  fieldStatusName: {
+    fontSize: 12,
+    flex: 1,
+  },
+  fieldStatusIcon: {
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  rewardInfoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+  },
+  rewardInfoText: {
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+
+  // Subscription Status Styles
+  subscriptionCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  subscriptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  subscriptionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  subscriptionInfo: {
+    marginBottom: 16,
+  },
+  subscriptionPlanContainer: {
+    marginBottom: 12,
+  },
+  subscriptionPlanLabel: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  subscriptionPlanValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  subscriptionExpiryContainer: {
+    marginBottom: 12,
+  },
+  subscriptionExpiryLabel: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  subscriptionExpiryValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  subscriptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F59E0B',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  subscriptionButtonText: {
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },

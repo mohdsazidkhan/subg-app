@@ -88,7 +88,7 @@ const SubscriptionScreen = () => {
         {
           key: 'basic',
           name: 'Basic',
-          price: 99,
+          price: 9,
           duration: '1 month',
           features: [
             { text: 'Unlimited Quiz Access (Levels 0-6)', included: true },
@@ -104,7 +104,7 @@ const SubscriptionScreen = () => {
         {
           key: 'premium',
           name: 'Premium',
-          price: 199,
+          price: 49,
           duration: '1 month',
           features: [
             { text: 'Unlimited Quiz Access (Levels 0-9)', included: true },
@@ -120,7 +120,7 @@ const SubscriptionScreen = () => {
         {
           key: 'pro',
           name: 'Pro',
-          price: 299,
+          price: 99,
           duration: '1 month',
           features: [
             { text: 'Unlimited Quiz Access (All Levels 0-10)', included: true },

@@ -14,6 +14,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 import API from '../../services/api';
 import TopBar from '../../components/TopBar';
+import QuizStartModal from '../../components/QuizStartModal';
 import { showMessage } from 'react-native-flash-message';
 
 const levels = [
@@ -41,6 +42,8 @@ const LevelDetailScreen = () => {
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
 
   const levelNumber = route.params?.levelNumber;
   const level = levels.find(lvl => lvl.level === Number(levelNumber));
@@ -118,7 +121,20 @@ const LevelDetailScreen = () => {
   };
 
   const handleQuizClick = (quiz) => {
-    navigation.navigate('Quiz', { quizId: quiz._id });
+    setSelectedQuiz(quiz);
+    setShowQuizModal(true);
+  };
+
+  const handleConfirmQuizStart = () => {
+    setShowQuizModal(false);
+    if (selectedQuiz) {
+      navigation.navigate('Quiz', { quizId: selectedQuiz._id });
+    }
+  };
+
+  const handleCancelQuizStart = () => {
+    setShowQuizModal(false);
+    setSelectedQuiz(null);
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -357,6 +373,13 @@ const LevelDetailScreen = () => {
           )}
         </View>
       </ScrollView>
+
+      <QuizStartModal
+        visible={showQuizModal}
+        quiz={selectedQuiz}
+        onClose={handleCancelQuizStart}
+        onConfirm={handleConfirmQuizStart}
+      />
     </View>
   );
 };

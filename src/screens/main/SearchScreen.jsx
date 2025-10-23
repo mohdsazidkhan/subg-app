@@ -216,7 +216,7 @@ const SearchScreen = () => {
           <View style={styles.emptyContainer}>
             <Icon name="search-off" size={60} color={colors.textSecondary} />
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}> 
-              {searchQuery ? "No data available" : "Search"}
+              {searchQuery ? "No data available" : "Search Categories, Subcategories, Quizzes"}
             </Text>
           </View>
         )}

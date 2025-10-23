@@ -18,6 +18,7 @@ import API from '../../services/api';
 import TopBar from '../../components/TopBar';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
+import QuizStartModal from '../../components/QuizStartModal';
 import { showMessage } from 'react-native-flash-message';
 
 const CategoryDetailScreen = () => {
@@ -35,6 +36,8 @@ const CategoryDetailScreen = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState('');
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
 
   const categoryId = route.params?.categoryId;
 
@@ -148,7 +151,20 @@ const CategoryDetailScreen = () => {
       );
       return;
     }
-    navigation.navigate('AttemptQuiz', { quiz });
+    setSelectedQuiz(quiz);
+    setShowQuizModal(true);
+  };
+
+  const handleConfirmQuizStart = () => {
+    setShowQuizModal(false);
+    if (selectedQuiz) {
+      navigation.navigate('AttemptQuiz', { quiz: selectedQuiz });
+    }
+  };
+
+  const handleCancelQuizStart = () => {
+    setShowQuizModal(false);
+    setSelectedQuiz(null);
   };
 
   const renderSubcategoryItem = (subcategory) => (
@@ -413,6 +429,13 @@ const CategoryDetailScreen = () => {
           )}
         </View>
       </ScrollView>
+
+      <QuizStartModal
+        visible={showQuizModal}
+        quiz={selectedQuiz}
+        onClose={handleCancelQuizStart}
+        onConfirm={handleConfirmQuizStart}
+      />
     </View>
   );
 };
@@ -486,12 +509,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginVertical: 16,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     flex: 1,
+    marginBottom: 16,
   },
   backButton: {
     flexDirection: 'row',

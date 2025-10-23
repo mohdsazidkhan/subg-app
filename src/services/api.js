@@ -317,7 +317,12 @@ class ApiService {
    */
   async getStudentQuizHistory(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.request(`/api/student/quiz-history?${queryString}`);
+    return this.request(`/api/levels/history?${queryString}`);
+  }
+
+  // Alias for compatibility with Next.js
+  async getQuizHistory(params = {}) {
+    return this.getStudentQuizHistory(params);
   }
 
   // ===== SEARCH ENDPOINTS =====
@@ -417,7 +422,7 @@ class ApiService {
   }
 
   async getBankDetails() {
-    return this.request('/api/bank-details/my-details');
+    return this.request('/api/bank-details');
   }
 
   // ===== PUBLIC ENDPOINTS =====

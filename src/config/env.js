@@ -57,8 +57,8 @@ export const REWARDS = {
  * @type {string}
  */
 // export const LOCAL_URL = fromEnv('LOCAL_URL', 'http://192.168.1.83:5000');
-// export const LOCAL_URL = fromEnv('LOCAL_URL', 'http://10.5.49.60:5000');
-export const LOCAL_URL = fromEnv('LOCAL_URL', 'http://172.20.10.3:5000');
+export const LOCAL_URL = fromEnv('LOCAL_URL', 'http://10.5.49.60:5000');
+// export const LOCAL_URL = fromEnv('LOCAL_URL', 'http://172.20.10.3:5000');
 export const BACKEND_URL = fromEnv('API_URL', 'https://subg-backend.onrender.com');
 // export const API_URL = fromEnv('API_URL', 'https://subg-backend.onrender.com');
 export const API_URL = fromEnv('API_URL', __DEV__ ? LOCAL_URL : BACKEND_URL);
