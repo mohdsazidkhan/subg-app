@@ -87,7 +87,7 @@ const RefundScreen = () => {
           </Text>
           
           <Text style={[styles.section, { color: colors.text }]}>
-            Email: support@mohdsazidkha.com
+            Email: support@mohdsazidkhan.com
           </Text>
 
           <Text style={[styles.footer, { color: colors.textSecondary }]}>

@@ -252,10 +252,7 @@ const MoreScreen = () => {
             Version 1.0.0
           </Text>
           <Text style={[styles.appName, { color: colors.textSecondary }]}>
-            SUBG Quiz App
-          </Text>
-          <Text style={[styles.appCopyright, { color: colors.textSecondary }]}>
-            © 2024 SUBG. All rights reserved.
+            SUBG QUIZ APP
           </Text>
         </View>
       </ScrollView>
@@ -271,13 +268,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileCard: {
-    margin: 20,
+    margin: 8,
     padding: 20,
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   avatar: {
     width: 60,
@@ -311,22 +308,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   section: {
-    marginBottom: 20,
-    paddingHorizontal: 20,
+    marginBottom: 10,
+    paddingHorizontal: 4,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   sectionCard: {
     paddingVertical: 8,
+    gap: 2
   },
   menuItem: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
+    paddingVertical: 8,
+    paddingHorizontal: 4
   },
   menuItemContent: {
     flexDirection: 'row',
@@ -338,8 +334,8 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   settingsCard: {
-    margin: 20,
-    marginBottom: 16,
+    marginHorizontal: 0,
+    marginBottom: 8,
     padding: 20,
   },
   settingItem: {
@@ -380,7 +376,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   shareCard: {
-    marginHorizontal: 20,
+    marginHorizontal: 4,
     marginBottom: 16,
   },
   shareButton: {
@@ -388,7 +384,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FF6B35',
-    paddingVertical: 16,
+    paddingVertical: 8,
     borderRadius: 12,
     gap: 8,
   },
@@ -398,7 +394,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   logoutCard: {
-    marginHorizontal: 20,
+    marginHorizontal: 4,
     marginBottom: 16,
     padding: 20,
   },
@@ -408,7 +404,7 @@ const styles = StyleSheet.create({
   appInfo: {
     alignItems: 'center',
     paddingVertical: 24,
-    paddingHorizontal: 20,
+    paddingHorizontal: 4,
   },
   appVersion: {
     fontSize: 14,

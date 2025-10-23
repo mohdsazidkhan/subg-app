@@ -261,14 +261,20 @@ class ApiService {
 
   /**
    * Submit quiz answers
-   * @param {string} quizId - Quiz ID
-   * @param {Object} answers - Quiz answers
+   * @param {Object} submissionData - Quiz submission data
+   * @param {string} submissionData.quizId - Quiz ID
+   * @param {Object} submissionData.answers - Quiz answers
+   * @param {number} submissionData.timeTaken - Time taken in seconds
    * @returns {Promise<any>} Submission response
    */
-  async submitQuiz(quizId, answers) {
+  async submitQuiz(submissionData) {
+    const { quizId, answers, timeTaken } = submissionData;
     return this.request(`/api/student/quizzes/${quizId}/attempt`, {
       method: 'POST',
-      body: JSON.stringify({ answers }),
+      body: JSON.stringify({ 
+        answers, 
+        timeSpent: timeTaken 
+      }),
     });
   }
 

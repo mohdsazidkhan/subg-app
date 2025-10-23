@@ -71,7 +71,7 @@ const TermsScreen = () => {
           </Text>
 
           <Text style={[styles.section, { color: colors.text }]}>
-            These Terms apply to your Quiz Platform access and participation. SUBG Quiz administrator reserves the right to grant/deny access, disqualify users, or adjust prizes.
+            These Terms apply to your Quiz Platform access and participation. SUBG QUIZ administrator reserves the right to grant/deny access, disqualify users, or adjust prizes.
           </Text>
 
           <Text style={[styles.section, { color: colors.text }]}>

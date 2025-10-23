@@ -158,7 +158,12 @@ const CategoryDetailScreen = () => {
   const handleConfirmQuizStart = () => {
     setShowQuizModal(false);
     if (selectedQuiz) {
-      navigation.navigate('AttemptQuiz', { quiz: selectedQuiz });
+      // Store navigation data like Next.js pattern
+      navigation.navigate('AttemptQuiz', { 
+        quiz: selectedQuiz,
+        fromPage: 'category',
+        categoryId: categoryId
+      });
     }
   };
 

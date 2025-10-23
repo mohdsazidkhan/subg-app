@@ -83,7 +83,7 @@ const ProfileScreen = () => {
       
       // Set the user data correctly - match Next.js approach
       if (profileRes?.success && profileRes?.user) {
-        setUser(profileRes.user);
+        // Note: user data is managed by AuthContext, so we don't need to set it here
         console.log('✅ User data set:', profileRes.user);
         
         setProfileStats({
@@ -108,7 +108,6 @@ const ProfileScreen = () => {
         });
       } else {
         console.log('❌ No user data found in response');
-        setUser({});
         setError('Failed to load profile data');
         
         // Set fallback data to prevent crashes
@@ -185,8 +184,12 @@ const ProfileScreen = () => {
             // User doesn't have bank details yet - this is normal
             console.log('ℹ️ No bank details found yet - user can add them');
             setBankDetails(null);
+          } else if (bankErr.message && bankErr.message.includes('Admin access required')) {
+            // User is not authorized to access bank details
+            console.log('⚠️ User not authorized for bank details - this is expected for non-eligible users');
+            setBankDetails(null);
           } else {
-            // Actual error occurred
+            // Other error occurred
             console.error('❌ Error fetching bank details:', bankErr);
             // Don't show error to user since bank details are optional
           }
@@ -206,24 +209,6 @@ const ProfileScreen = () => {
     setRefreshing(true);
     await fetchProfileData();
     setRefreshing(false);
-  };
-
-  const isEligibleForBankDetails = (user) => {
-    if (!user) {
-      console.log('❌ No user data for eligibility check');
-      return false;
-    }
-    
-    const isLevelTen = user.levelInfo?.currentLevel?.number === 10;
-    const isProPlan = user.subscriptionStatus === 'pro';
-    
-    // TEMPORARY: Allow all users to see bank details for testing
-    // TODO: Remove this and use proper eligibility check
-    console.log('🔧 TEMPORARY: Allowing all users to see bank details');
-    return true;
-    
-    // Original eligibility check (commented out for testing)
-    // return isLevelTen || isProPlan;
   };
 
   const getSubscriptionStatusText = (subscriptionStatus) => {
@@ -256,6 +241,28 @@ const ProfileScreen = () => {
     }
   };
 
+  // Check if user is eligible for bank details (level 10 or pro subscription)
+  const isEligibleForBankDetails = (user) => {
+    if (!user) {
+      console.log('❌ No user data for eligibility check');
+      return false;
+    }
+    
+    const isLevelTen = user.levelInfo?.currentLevel?.number === 10;
+    const isProPlan = user.subscriptionStatus === 'pro';
+    
+    console.log('🔍 Bank Details Eligibility Check:', {
+      userLevel: user.levelInfo?.currentLevel?.number,
+      subscriptionStatus: user.subscriptionStatus,
+      isLevelTen,
+      isProPlan,
+      isEligible: isLevelTen || isProPlan
+    });
+    
+    return isLevelTen || isProPlan;
+  };
+
+  // Check if user has Free or Basic plan subscription
   const isFreeOrBasicPlanUser = (user) => {
     if (!user) {
       console.log('❌ No user data for Free/Basic plan check');
@@ -407,51 +414,6 @@ const ProfileScreen = () => {
     );
   };
 
-  const menuItems = [
-    {
-      title: 'Quiz History',
-      icon: 'history',
-      onPress: () => {
-        // Navigate to quiz history
-      },
-    },
-    {
-      title: 'Achievements',
-      icon: 'emoji-events',
-      onPress: () => {
-        // Navigate to achievements
-      },
-    },
-    {
-      title: 'Create Question',
-      icon: 'add-circle',
-      onPress: () => {
-        navigation.navigate('CreateQuestion');
-      },
-    },
-    {
-      title: 'Create Quiz',
-      icon: 'quiz',
-      onPress: () => {
-        navigation.navigate('CreateQuiz');
-      },
-    },
-    {
-      title: 'Settings',
-      icon: 'settings',
-      onPress: () => {
-        // Navigate to settings
-      },
-    },
-    {
-      title: 'Contact Us',
-      icon: 'contact-support',
-      onPress: () => {
-        // Navigate to contact
-      },
-    },
-  ];
-
   // Calculate stats - use both profile data and quiz history
   const quizzesPlayed = Math.max(playedQuizzes.length, profileStats.quizzesCompleted);
   const highScoreQuizzes = playedQuizzes.filter(quiz => quiz.score >= 80).length;
@@ -515,7 +477,7 @@ const ProfileScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Profile Header - Exact Next.js Design */}
+        {/* Profile Header - Match Next.js Design */}
         <View style={[styles.profileHeader, { backgroundColor: colors.surface }]}>
           {/* Cover Photo Area */}
           <LinearGradient
@@ -562,148 +524,8 @@ const ProfileScreen = () => {
           </View>
         </View>
 
-        {/* Profile Completion Progress - Only show for Free or Basic plan users */}
-        {isFreeOrBasicPlanUser(user) && profileCompletion && (
-          <View style={[styles.profileCompletionCard, { backgroundColor: colors.surface }]}>
-            <View style={styles.profileCompletionHeader}>
-              <View style={styles.profileCompletionTitleContainer}>
-                <Icon name="school" size={20} color={colors.success} />
-                <Text style={[styles.profileCompletionTitle, { color: colors.text }]}>
-                  Profile Completion
-                </Text>
-              </View>
-              <Text style={[
-                styles.profileCompletionPercentage,
-                { color: profileCompletion.percentage === 100 ? colors.success : colors.warning }
-              ]}>
-                {profileCompletion.percentage === 100 ? 'Completed ✅' : `${profileCompletion.percentage}%`}
-              </Text>
-            </View>
-            
-            {/* Progress Bar */}
-            <View style={[styles.progressBarContainer, { backgroundColor: colors.border }]}>
-              <View 
-                style={[
-                  styles.progressBar,
-                  { 
-                    width: `${profileCompletion.percentage}%`,
-                    backgroundColor: profileCompletion.percentage === 100 ? colors.success : colors.warning
-                  }
-                ]}
-              />
-            </View>
-            
-            {/* Status Message */}
-            <Text style={[styles.profileCompletionMessage, { color: colors.textSecondary }]}>
-              {profileCompletion.percentage === 100 
-                ? '🎉 Congratulations! Your profile is complete and you have received your Basic Subscription reward!'
-                : `Complete ${4 - profileCompletion.completedFields} more field${4 - profileCompletion.completedFields === 1 ? '' : 's'} to get 100% and unlock your Basic Subscription reward!`
-              }
-            </Text>
-
-            {/* Field Status */}
-            <View style={styles.fieldStatusContainer}>
-              {profileCompletion.fields.map((field, index) => (
-                <View key={index} style={[styles.fieldStatusItem, { backgroundColor: colors.surface + '50' }]}>
-                  <Text style={[styles.fieldStatusName, { color: colors.text }]}>{field.name}</Text>
-                  <Text style={[styles.fieldStatusIcon, { color: field.completed ? colors.success : colors.error }]}>
-                    {field.completed ? '✅' : '❌'}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            
-            {/* Reward Info */}
-            {profileCompletion.percentage === 100 && (
-              <View style={[styles.rewardInfoCard, { backgroundColor: colors.success + '20', borderColor: colors.success }]}>
-                <Icon name="star" size={20} color={colors.success} />
-                <Text style={[styles.rewardInfoText, { color: colors.success }]}>
-                  You've earned a Basic Subscription (₹9 value) for 30 days!
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Subscription Status Section */}
-        <View style={[styles.subscriptionCard, { backgroundColor: colors.surface }]}>
-          <View style={styles.subscriptionHeader}>
-            <View style={styles.subscriptionTitleContainer}>
-              <Icon name="workspace-premium" size={20} color={colors.primary} />
-              <Text style={[styles.subscriptionTitle, { color: colors.text }]}>
-                Subscription Status
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.subscriptionInfo}>
-            <View style={styles.subscriptionPlanContainer}>
-              <Text style={[styles.subscriptionPlanLabel, { color: colors.textSecondary }]}>Current Plan</Text>
-              <Text style={[
-                styles.subscriptionPlanValue, 
-                { color: getSubscriptionStatusColor(user?.subscriptionStatus) }
-              ]}>
-                {getSubscriptionStatusText(user?.subscriptionStatus)}
-              </Text>
-            </View>
-            
-            {(user?.subscriptionExpiry || user?.subscription?.expiresAt) && user?.subscriptionStatus !== 'free' && (
-              <View style={styles.subscriptionExpiryContainer}>
-                <Text style={[styles.subscriptionExpiryLabel, { color: colors.textSecondary }]}>Expires</Text>
-                <Text style={[styles.subscriptionExpiryValue, { color: colors.text }]}>
-                  {new Date(user.subscriptionExpiry || user.subscription?.expiresAt).toLocaleDateString()}
-                </Text>
-              </View>
-            )}
-          </View>
-          
-          <TouchableOpacity 
-            style={[styles.subscriptionButton, { backgroundColor: colors.primary }]}
-            onPress={() => navigation.navigate('Subscription')}
-          >
-            <Text style={styles.subscriptionButtonText}>
-              {user?.subscriptionStatus === 'free' ? 'Upgrade Plan' : 'Manage Subscription'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Rewards & Achievements Section */}
-        <View style={[styles.rewardsCard, { backgroundColor: colors.surface }]}>
-          <View style={styles.rewardsHeader}>
-            <View style={styles.rewardsTitleContainer}>
-              <Icon name="emoji-events" size={20} color={colors.primary} />
-              <Text style={[styles.rewardsTitle, { color: colors.text }]}>
-                Rewards & Achievements
-              </Text>
-            </View>
-            <TouchableOpacity 
-              style={[styles.viewRewardsButton, { backgroundColor: colors.primary }]}
-              onPress={() => navigation.navigate('Rewards')}
-            >
-              <Text style={styles.viewRewardsButtonText}>View Rewards</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.rewardsStats}>
-            <View style={[styles.rewardStatItem, { backgroundColor: colors.background }]}>
-              <Text style={[styles.rewardStatValue, { color: colors.success }]}>
-                ₹{user?.claimableRewards?.toLocaleString() || user?.totalRewards?.toLocaleString() || '0'}
-              </Text>
-              <Text style={[styles.rewardStatLabel, { color: colors.textSecondary }]}>
-                Total Claimable
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.rewardsInfo}>
-            <Text style={[styles.rewardsInfoText, { color: colors.textSecondary }]}>
-              Track your progress and unlock rewards by completing quizzes and reaching milestones.
-            </Text>
-          </View>
-        </View>
-
-        {/* About Section */}
-        <View style={[styles.aboutCard, { backgroundColor: colors.surface }]}>
+         {/* About Section */}
+         <View style={[styles.aboutCard, { backgroundColor: colors.surface }]}>
           <View style={styles.aboutHeader}>
             <Text style={[styles.aboutTitle, { color: colors.text }]}>About</Text>
             {user?.username && (
@@ -1037,6 +859,8 @@ const ProfileScreen = () => {
           )}
         </View>
 
+        
+
         {/* Subscription Status */}
         <View style={[styles.subscriptionCard, { backgroundColor: colors.surface }]}>
           <View style={styles.subscriptionHeader}>
@@ -1106,33 +930,123 @@ const ProfileScreen = () => {
           </Text>
         </View>
 
-        {/* Quiz Stats */}
+        {/* Profile Completion Progress - Only show for Free or Basic plan users */}
+        {isFreeOrBasicPlanUser(user) && profileCompletion ? (
+          <View style={[styles.profileCompletionCard, { backgroundColor: colors.surface }]}>
+            <View style={styles.profileCompletionHeader}>
+              <View style={styles.profileCompletionTitleContainer}>
+                <Icon name="school" size={20} color={colors.success} />
+                <Text style={[styles.profileCompletionTitle, { color: colors.text }]}>
+                  Profile Completion
+                </Text>
+              </View>
+              <Text style={[
+                styles.profileCompletionPercentage,
+                { color: profileCompletion.percentage === 100 ? colors.success : colors.warning }
+              ]}>
+                {profileCompletion.percentage === 100 ? 'Completed ✅' : `${profileCompletion.percentage}%`}
+              </Text>
+            </View>
+            
+            {/* Progress Bar */}
+            <View style={[styles.progressBarContainer, { backgroundColor: colors.border }]}>
+              <View 
+                style={[
+                  styles.progressBar,
+                  { 
+                    width: `${profileCompletion.percentage}%`,
+                    backgroundColor: profileCompletion.percentage === 100 ? colors.success : colors.warning
+                  }
+                ]}
+              />
+            </View>
+            
+            {/* Status Message */}
+            <Text style={[styles.profileCompletionMessage, { color: colors.textSecondary }]}>
+              {profileCompletion.percentage === 100 
+                ? '🎉 Congratulations! Your profile is complete and you have received your Basic Subscription reward!'
+                : `Complete ${4 - profileCompletion.completedFields} more field${4 - profileCompletion.completedFields === 1 ? '' : 's'} to get 100% and unlock your Basic Subscription reward!`
+              }
+            </Text>
+
+            {/* Field Status */}
+            <View style={styles.fieldStatusContainer}>
+              {profileCompletion.fields.map((field, index) => (
+                <View key={index} style={[styles.fieldStatusItem, { backgroundColor: colors.surface + '50' }]}>
+                  <Text style={[styles.fieldStatusName, { color: colors.text }]}>{field.name}</Text>
+                  <Text style={[styles.fieldStatusIcon, { color: field.completed ? colors.success : colors.error }]}>
+                    {field.completed ? '✅' : '❌'}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            
+            {/* Reward Info */}
+            {profileCompletion.percentage === 100 && (
+              <View style={[styles.rewardInfoCard, { backgroundColor: colors.success + '20', borderColor: colors.success }]}>
+                <Icon name="star" size={20} color={colors.success} />
+                <Text style={[styles.rewardInfoText, { color: colors.success }]}>
+                  You've earned a Basic Subscription (₹9 value) for 30 days!
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : isFreeOrBasicPlanUser(user) ? (
+          <View style={[styles.profileCompletionCard, { backgroundColor: colors.surface }]}>
+            <View style={styles.profileCompletionHeader}>
+              <Text style={[styles.profileCompletionTitle, { color: colors.text }]}>
+                Loading profile completion data...
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Facebook-style Stats Section - Match Next.js Design */}
         <View style={[styles.statsCard, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.statsTitle, { color: colors.text }]}>Quiz Stats</Text>
+          <View style={styles.statsHeader}>
+            <Text style={[styles.statsTitle, { color: colors.text }]}>Quiz Stats</Text>
+          </View>
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: '#3B82F6' }]}>{quizzesPlayed}</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{quizzesPlayed}</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Quizzes Played</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: '#10B981' }]}>{highScoreQuizzes}</Text>
+              <Text style={[styles.statValue, { color: colors.success }]}>{highScoreQuizzes}</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>High Scores</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: '#8B5CF6' }]}>{highScoreRate}%</Text>
+              <Text style={[styles.statValue, { color: colors.warning }]}>{highScoreRate}%</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Success Rate</Text>
             </View>
           </View>
         </View>
 
-        {/* Create Content Section */}
+        {/* Achievement Badges Section */}
+        <View style={[styles.achievementCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.achievementHeader}>
+            <View style={styles.achievementIconContainer}>
+              <Icon name="emoji-events" size={20} color={colors.success} />
+            </View>
+            <View style={styles.achievementContent}>
+              <Text style={[styles.achievementLabel, { color: colors.textSecondary }]}>Achievement Badges</Text>
+              <Text style={[styles.achievementValue, { color: colors.text }]}>
+                {user?.badges && user.badges.length > 0
+                  ? user.badges.join(', ')
+                  : 'No badges yet'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Create Content Section - Match Next.js Design */}
         <View style={[styles.createContentCard, { backgroundColor: colors.surface }]}>
           <View style={styles.createContentHeader}>
-            <Icon name="add-circle" size={32} color="#10B981" />
+            <View style={styles.createContentIconContainer}>
+              <Icon name="add-circle" size={24} color={colors.primary} />
+            </View>
             <View style={styles.createContentTitleContainer}>
-              <Text style={[styles.createContentTitle, { color: colors.text }]}>
-                Create Content
-              </Text>
+              <Text style={[styles.createContentTitle, { color: colors.text }]}>Create Content</Text>
               <Text style={[styles.createContentSubtitle, { color: colors.textSecondary }]}>
                 Create questions and quizzes to earn money
               </Text>
@@ -1141,78 +1055,190 @@ const ProfileScreen = () => {
           
           <View style={styles.createContentGrid}>
             {/* Create Question */}
-            <TouchableOpacity
+            <TouchableOpacity 
               style={[styles.createContentItem, { backgroundColor: colors.background }]}
               onPress={() => navigation.navigate('CreateQuestion')}
             >
-              <Icon name="add-circle" size={24} color="#10B981" />
-              <Text style={[styles.createContentItemTitle, { color: colors.text }]}>
-                Create Question
-              </Text>
-              <Text style={[styles.createContentItemSubtitle, { color: colors.textSecondary }]}>
-                Post new questions
-              </Text>
+              <View style={styles.createContentItemIcon}>
+                <Icon name="note-add" size={20} color={colors.success} />
+              </View>
+              <View style={styles.createContentItemContent}>
+                <Text style={[styles.createContentItemTitle, { color: colors.text }]}>Create Question</Text>
+                <Text style={[styles.createContentItemSubtitle, { color: colors.textSecondary }]}>Post new questions</Text>
+              </View>
             </TouchableOpacity>
 
             {/* Create Quiz */}
-            <TouchableOpacity
+            <TouchableOpacity 
               style={[styles.createContentItem, { backgroundColor: colors.background }]}
               onPress={() => navigation.navigate('CreateQuiz')}
             >
-              <Icon name="quiz" size={24} color="#3B82F6" />
-              <Text style={[styles.createContentItemTitle, { color: colors.text }]}>
-                Create Quiz
-              </Text>
-              <Text style={[styles.createContentItemSubtitle, { color: colors.textSecondary }]}>
-                Create quiz sets
-              </Text>
+              <View style={styles.createContentItemIcon}>
+                <Icon name="quiz" size={20} color={colors.warning} />
+              </View>
+              <View style={styles.createContentItemContent}>
+                <Text style={[styles.createContentItemTitle, { color: colors.text }]}>Create Quiz</Text>
+                <Text style={[styles.createContentItemSubtitle, { color: colors.textSecondary }]}>Build quiz sets</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Menu Items */}
-        <View style={styles.menuContainer}>
-          {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.menuItem, { backgroundColor: colors.surface }]}
-              onPress={item.onPress}
-            >
-              <View style={styles.menuItemContent}>
-                <Icon name={item.icon} size={24} color={colors.primary} />
-                <Text style={[styles.menuItemText, { color: colors.text }]}>
-                  {item.title}
+        {/* Level Progression Card - Match Next.js Design */}
+        <View style={[styles.levelProgressionCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.levelProgressionHeader}>
+            <View style={styles.levelProgressionIconContainer}>
+              <Icon name="emoji-events" size={24} color={colors.primary} />
+            </View>
+            <View style={styles.levelProgressionTitleContainer}>
+              <Text style={[styles.levelProgressionTitle, { color: colors.text }]}>
+                Level Progression
+              </Text>
+              <Text style={[styles.levelProgressionSubtitle, { color: colors.textSecondary }]}>
+                Your journey from Starter to Legend
+              </Text>
+            </View>
+          </View>
+          
+          {/* Current Level Display */}
+          <View style={styles.currentLevelContainer}>
+            <View style={styles.currentLevelInfo}>
+              <View style={[styles.currentLevelIcon, { backgroundColor: colors.primary }]}>
+                <Text style={styles.currentLevelIconText}>
+                  {user?.levelInfo?.currentLevel?.name?.charAt(0) || 'L'}
                 </Text>
-                <Icon name="chevron-right" size={24} color={colors.textSecondary} />
               </View>
-            </TouchableOpacity>
-          ))}
+              <View style={styles.currentLevelDetails}>
+                <Text style={[styles.currentLevelName, { color: colors.text }]}>
+                  {user?.levelInfo?.currentLevel?.name || 'Level 0'}
+                </Text>
+                <Text style={[styles.currentLevelNumber, { color: colors.textSecondary }]}>
+                  Level {user?.levelInfo?.currentLevel?.number || 0}
+                </Text>
+              </View>
+            </View>
+            
+            {/* Level Stats */}
+            <View style={styles.levelStatsGrid}>
+              <View style={styles.levelStatItem}>
+                <Text style={[styles.levelStatValue, { color: colors.success }]}>
+                  {user?.levelInfo?.quizzesPlayed || 0}
+                </Text>
+                <Text style={[styles.levelStatLabel, { color: colors.textSecondary }]}>
+                  Quizzes Played
+                </Text>
+              </View>
+              <View style={styles.levelStatItem}>
+                <Text style={[styles.levelStatValue, { color: colors.warning }]}>
+                  {user?.levelInfo?.highScoreQuizzes || 0}
+                </Text>
+                <Text style={[styles.levelStatLabel, { color: colors.textSecondary }]}>
+                  High Scores
+                </Text>
+              </View>
+              <View style={styles.levelStatItem}>
+                <Text style={[styles.levelStatValue, { color: colors.primary }]}>
+                  {user?.levelInfo?.averageScore || 0}%
+                </Text>
+                <Text style={[styles.levelStatLabel, { color: colors.textSecondary }]}>
+                  Average Score
+                </Text>
+              </View>
+            </View>
+          </View>
+          
+          {/* Next Level Progress */}
+          {user?.levelInfo?.nextLevel && (
+            <View style={styles.nextLevelContainer}>
+              <View style={styles.nextLevelHeader}>
+                <Text style={[styles.nextLevelTitle, { color: colors.text }]}>
+                  Next Level: {user.levelInfo.nextLevel.name}
+                </Text>
+                <Text style={[styles.nextLevelSubtitle, { color: colors.textSecondary }]}>
+                  {user.levelInfo.quizzesNeededForNextLevel || 0} more quizzes needed
+                </Text>
+              </View>
+              
+              {/* Progress Bar */}
+              <View style={[styles.nextLevelProgressContainer, { backgroundColor: colors.border }]}>
+                <View 
+                  style={[
+                    styles.nextLevelProgressBar,
+                    { 
+                      width: `${user.levelInfo.progressToNextLevel || 0}%`,
+                      backgroundColor: colors.primary
+                    }
+                  ]}
+                />
+              </View>
+              
+              <Text style={[styles.nextLevelProgressText, { color: colors.textSecondary }]}>
+                {user.levelInfo.progressToNextLevel || 0}% complete
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* Bank Details Section - Only show if eligible */}
+        {/* Rewards & Achievements Section */}
+        <View style={[styles.rewardsCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.rewardsHeader}>
+            <View style={styles.rewardsTitleContainer}>
+              <Icon name="emoji-events" size={20} color={colors.primary} />
+              <Text style={[styles.rewardsTitle, { color: colors.text }]}>
+                Rewards & Achievements
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={[styles.viewRewardsButton, { backgroundColor: colors.primary }]}
+              onPress={() => navigation.navigate('Rewards')}
+            >
+              <Text style={styles.viewRewardsButtonText}>View Rewards</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.rewardsStats}>
+            <View style={[styles.rewardStatItem, { backgroundColor: colors.background }]}>
+              <Text style={[styles.rewardStatValue, { color: colors.success }]}>
+                ₹{user?.claimableRewards?.toLocaleString() || user?.totalRewards?.toLocaleString() || '0'}
+              </Text>
+              <Text style={[styles.rewardStatLabel, { color: colors.textSecondary }]}>
+                Total Claimable
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.rewardsInfo}>
+            <Text style={[styles.rewardsInfoText, { color: colors.textSecondary }]}>
+              Track your progress and unlock rewards by completing quizzes and reaching milestones.
+            </Text>
+          </View>
+        </View>
+
+        {/* Bank Details Section - Only shown for eligible users (level 10 or pro subscription) */}
         {isEligibleForBankDetails(user) && (
           <View style={[styles.bankDetailsCard, { backgroundColor: colors.surface }]}>
             <View style={styles.bankDetailsHeader}>
-              <Icon name="account-balance" size={24} color="#F59E0B" />
-              <Text style={[styles.bankDetailsTitle, { color: colors.text }]}>
-                Bank Details
-              </Text>
-              <TouchableOpacity
-                style={styles.bankDetailsButton}
-                onPress={() => setShowBankForm(!showBankForm)}
-              >
-                <Icon name={showBankForm ? "close" : "edit"} size={16} color="white" />
-                <Text style={styles.bankDetailsButtonText}>
-                  {showBankForm ? 'Cancel' : bankDetails ? 'Edit' : 'Add'}
+              <View style={styles.bankDetailsIconContainer}>
+                <Icon name="account-balance" size={24} color={colors.primary} />
+              </View>
+              <View style={styles.bankDetailsTitleContainer}>
+                <Text style={[styles.bankDetailsTitle, { color: colors.text }]}>
+                  Bank Details
                 </Text>
-              </TouchableOpacity>
+                <Text style={[styles.bankDetailsSubtitle, { color: colors.textSecondary }]}>
+                  {bankDetails ? 'Your banking information' : 'Add your bank account information'}
+                </Text>
+              </View>
             </View>
 
-            {!showBankForm ? (
-              /* Show Bank Details */
-              bankDetails ? (
-                <View style={styles.bankDetailsInfo}>
-                  <View style={styles.bankDetailItem}>
+            {/* Bank Details Display */}
+            {bankDetails && !showBankForm ? (
+              <View style={styles.bankDetailsDisplay}>
+                <View style={[styles.bankDetailItem, { backgroundColor: colors.background }]}>
+                  <View style={styles.bankDetailIcon}>
+                    <Icon name="person" size={20} color={colors.primary} />
+                  </View>
+                  <View style={styles.bankDetailContent}>
                     <Text style={[styles.bankDetailLabel, { color: colors.textSecondary }]}>
                       Account Holder
                     </Text>
@@ -1220,7 +1246,27 @@ const ProfileScreen = () => {
                       {bankDetails.accountHolderName}
                     </Text>
                   </View>
-                  <View style={styles.bankDetailItem}>
+                </View>
+
+                <View style={[styles.bankDetailItem, { backgroundColor: colors.background }]}>
+                  <View style={styles.bankDetailIcon}>
+                    <Icon name="credit-card" size={20} color={colors.success} />
+                  </View>
+                  <View style={styles.bankDetailContent}>
+                    <Text style={[styles.bankDetailLabel, { color: colors.textSecondary }]}>
+                      Account Number
+                    </Text>
+                    <Text style={[styles.bankDetailValue, { color: colors.text }]}>
+                      ****{bankDetails.accountNumber.slice(-4)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={[styles.bankDetailItem, { backgroundColor: colors.background }]}>
+                  <View style={styles.bankDetailIcon}>
+                    <Icon name="business" size={20} color={colors.warning} />
+                  </View>
+                  <View style={styles.bankDetailContent}>
                     <Text style={[styles.bankDetailLabel, { color: colors.textSecondary }]}>
                       Bank Name
                     </Text>
@@ -1228,15 +1274,13 @@ const ProfileScreen = () => {
                       {bankDetails.bankName}
                     </Text>
                   </View>
-                  <View style={styles.bankDetailItem}>
-                    <Text style={[styles.bankDetailLabel, { color: colors.textSecondary }]}>
-                      Account Number
-                    </Text>
-                    <Text style={[styles.bankDetailValue, { color: colors.text }]}>
-                      {bankDetails.accountNumber}
-                    </Text>
+                </View>
+
+                <View style={[styles.bankDetailItem, { backgroundColor: colors.background }]}>
+                  <View style={styles.bankDetailIcon}>
+                    <Icon name="code" size={20} color={colors.error} />
                   </View>
-                  <View style={styles.bankDetailItem}>
+                  <View style={styles.bankDetailContent}>
                     <Text style={[styles.bankDetailLabel, { color: colors.textSecondary }]}>
                       IFSC Code
                     </Text>
@@ -1245,14 +1289,37 @@ const ProfileScreen = () => {
                     </Text>
                   </View>
                 </View>
-              ) : (
-                <Text style={[styles.noBankDetailsText, { color: colors.textSecondary }]}>
-                  No bank details added yet. Add your bank details to receive payments.
-                </Text>
-              )
-            ) : (
+
+                <View style={[styles.bankDetailItem, { backgroundColor: colors.background }]}>
+                  <View style={styles.bankDetailIcon}>
+                    <Icon name="location-on" size={20} color={colors.primary} />
+                  </View>
+                  <View style={styles.bankDetailContent}>
+                    <Text style={[styles.bankDetailLabel, { color: colors.textSecondary }]}>
+                      Branch Name
+                    </Text>
+                    <Text style={[styles.bankDetailValue, { color: colors.text }]}>
+                      {bankDetails.branchName}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.editBankButton, { backgroundColor: colors.primary }]}
+                  onPress={() => setShowBankForm(true)}
+                >
+                  <Icon name="edit" size={16} color="white" />
+                  <Text style={styles.editBankButtonText}>Edit Bank Details</Text>
+                </TouchableOpacity>
+              </View>
+            ) : showBankForm ? (
               /* Bank Details Form */
               <View style={styles.bankForm}>
+                <Text style={[styles.formTitle, { color: colors.text }]}>
+                  {bankDetails ? 'Edit Bank Details' : 'Add Bank Details'}
+                </Text>
+                
+                {/* Account Holder Name */}
                 <View style={styles.formField}>
                   <Text style={[styles.fieldLabel, { color: colors.text }]}>Account Holder Name</Text>
                   <TextInput
@@ -1276,6 +1343,7 @@ const ProfileScreen = () => {
                   )}
                 </View>
 
+                {/* Account Number */}
                 <View style={styles.formField}>
                   <Text style={[styles.fieldLabel, { color: colors.text }]}>Account Number</Text>
                   <TextInput
@@ -1300,6 +1368,7 @@ const ProfileScreen = () => {
                   )}
                 </View>
 
+                {/* Bank Name */}
                 <View style={styles.formField}>
                   <Text style={[styles.fieldLabel, { color: colors.text }]}>Bank Name</Text>
                   <TextInput
@@ -1323,6 +1392,7 @@ const ProfileScreen = () => {
                   )}
                 </View>
 
+                {/* IFSC Code */}
                 <View style={styles.formField}>
                   <Text style={[styles.fieldLabel, { color: colors.text }]}>IFSC Code</Text>
                   <TextInput
@@ -1347,6 +1417,7 @@ const ProfileScreen = () => {
                   )}
                 </View>
 
+                {/* Branch Name */}
                 <View style={styles.formField}>
                   <Text style={[styles.fieldLabel, { color: colors.text }]}>Branch Name</Text>
                   <TextInput
@@ -1370,20 +1441,311 @@ const ProfileScreen = () => {
                   )}
                 </View>
 
-                <TouchableOpacity
-                  style={styles.saveBankButton}
-                  onPress={handleSaveBankDetails}
-                  disabled={isSaving}
+                {/* Form Actions */}
+                <View style={styles.formActions}>
+                  <TouchableOpacity
+                    style={[styles.cancelButton, { backgroundColor: colors.border }]}
+                    onPress={() => setShowBankForm(false)}
+                  >
+                    <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.saveButton, { backgroundColor: colors.primary }]}
+                    onPress={handleSaveBankDetails}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <>
+                        <Icon name="save" size={16} color="white" />
+                        <Text style={styles.saveButtonText}>Save Bank Details</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.addBankButton, { backgroundColor: colors.primary }]}
+                onPress={() => setShowBankForm(true)}
+              >
+                <Icon name="add" size={16} color="white" />
+                <Text style={styles.addBankButtonText}>Add Bank Details</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Monthly Rewards Section */}
+        <View style={[styles.monthlyRewardsCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.monthlyRewardsHeader}>
+            <View style={styles.monthlyRewardsIconContainer}>
+              <Icon name="star" size={24} color={colors.primary} />
+            </View>
+            <View style={styles.monthlyRewardsTitleContainer}>
+              <Text style={[styles.monthlyRewardsTitle, { color: colors.text }]}>
+                Monthly Rewards
+              </Text>
+              <Text style={[styles.monthlyRewardsSubtitle, { color: colors.textSecondary }]}>
+                Compete for monthly prizes and recognition
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.monthlyRewardsContent}>
+            <View style={[styles.monthlyRewardItem, { backgroundColor: colors.background }]}>
+              <View style={styles.monthlyRewardIcon}>
+                <Icon name="emoji-events" size={20} color={colors.success} />
+              </View>
+              <View style={styles.monthlyRewardContent}>
+                <Text style={[styles.monthlyRewardTitle, { color: colors.text }]}>
+                  Monthly Leaderboard
+                </Text>
+                <Text style={[styles.monthlyRewardDescription, { color: colors.textSecondary }]}>
+                  Top performers win cash prizes every month
+                </Text>
+              </View>
+            </View>
+            
+            <View style={[styles.monthlyRewardItem, { backgroundColor: colors.background }]}>
+              <View style={styles.monthlyRewardIcon}>
+                <Icon name="trending-up" size={20} color={colors.warning} />
+              </View>
+              <View style={styles.monthlyRewardContent}>
+                <Text style={[styles.monthlyRewardTitle, { color: colors.text }]}>
+                  Performance Tracking
+                </Text>
+                <Text style={[styles.monthlyRewardDescription, { color: colors.textSecondary }]}>
+                  Track your monthly progress and achievements
+                </Text>
+              </View>
+            </View>
+            
+            <TouchableOpacity 
+              style={[styles.viewMonthlyRewardsButton, { backgroundColor: colors.primary }]}
+              onPress={() => navigation.navigate('MonthlyRewards')}
+            >
+              <Text style={styles.viewMonthlyRewardsButtonText}>View Monthly Rewards</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {isEligibleForBankDetails(user) && (
+          <View style={[styles.bankDetailsCard, { backgroundColor: colors.surface }]}>
+            <View style={styles.bankDetailsHeader}>
+              <View style={styles.bankDetailsIconContainer}>
+                <Icon name="account-balance" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.bankDetailsTitleContainer}>
+                <Text style={[styles.bankDetailsTitle, { color: colors.text }]}>Bank Details</Text>
+                <Text style={[styles.bankDetailsSubtitle, { color: colors.textSecondary }]}>
+                  Required for withdrawals
+                </Text>
+              </View>
+              {!showBankForm && (
+                <TouchableOpacity 
+                  style={[styles.bankDetailsButton, { backgroundColor: colors.primary }]}
+                  onPress={() => setShowBankForm(true)}
                 >
-                  {isSaving ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <Icon name="save" size={16} color="white" />
-                  )}
-                  <Text style={styles.saveBankButtonText}>
-                    {isSaving ? 'Saving...' : 'Save Bank Details'}
+                  <Text style={styles.bankDetailsButtonText}>
+                    {bankDetails ? 'Edit' : 'Add'}
                   </Text>
                 </TouchableOpacity>
+              )}
+            </View>
+
+            {!showBankForm ? (
+              /* Display existing bank details */
+              bankDetails ? (
+                <View style={styles.bankDetailsDisplay}>
+                  <View style={styles.bankDetailsItem}>
+                    <Text style={[styles.bankDetailsLabel, { color: colors.textSecondary }]}>Account Holder</Text>
+                    <Text style={[styles.bankDetailsValue, { color: colors.text }]}>{bankDetails.accountHolderName}</Text>
+                  </View>
+                  <View style={styles.bankDetailsItem}>
+                    <Text style={[styles.bankDetailsLabel, { color: colors.textSecondary }]}>Account Number</Text>
+                    <Text style={[styles.bankDetailsValue, { color: colors.text }]}>{bankDetails.accountNumber}</Text>
+                  </View>
+                  <View style={styles.bankDetailsItem}>
+                    <Text style={[styles.bankDetailsLabel, { color: colors.textSecondary }]}>Bank Name</Text>
+                    <Text style={[styles.bankDetailsValue, { color: colors.text }]}>{bankDetails.bankName}</Text>
+                  </View>
+                  <View style={styles.bankDetailsItem}>
+                    <Text style={[styles.bankDetailsLabel, { color: colors.textSecondary }]}>IFSC Code</Text>
+                    <Text style={[styles.bankDetailsValue, { color: colors.text }]}>{bankDetails.ifscCode}</Text>
+                  </View>
+                  <View style={styles.bankDetailsItem}>
+                    <Text style={[styles.bankDetailsLabel, { color: colors.textSecondary }]}>Branch</Text>
+                    <Text style={[styles.bankDetailsValue, { color: colors.text }]}>{bankDetails.branchName}</Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.bankDetailsEmpty}>
+                  <Icon name="account-balance-wallet" size={40} color={colors.textSecondary} />
+                  <Text style={[styles.bankDetailsEmptyText, { color: colors.textSecondary }]}>
+                    No bank details added yet
+                  </Text>
+                  <Text style={[styles.bankDetailsEmptySubtext, { color: colors.textSecondary }]}>
+                    Add your bank details to enable withdrawals
+                  </Text>
+                </View>
+              )
+            ) : (
+              /* Bank details form */
+              <View style={styles.bankDetailsForm}>
+                <Text style={[styles.formTitle, { color: colors.text }]}>
+                  {bankDetails ? 'Update Bank Details' : 'Add Bank Details'}
+                </Text>
+                
+                {/* Account Holder Name */}
+                <View style={styles.formField}>
+                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Account Holder Name</Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      { 
+                        backgroundColor: colors.background,
+                        color: colors.text,
+                        borderColor: bankFormErrors.accountHolderName ? colors.error : colors.border
+                      }
+                    ]}
+                    value={bankFormData.accountHolderName}
+                    onChangeText={(value) => handleBankFormChange('accountHolderName', value)}
+                    placeholder="Enter account holder name"
+                    placeholderTextColor={colors.textSecondary}
+                  />
+                  {bankFormErrors.accountHolderName && (
+                    <Text style={[styles.fieldError, { color: colors.error }]}>
+                      {bankFormErrors.accountHolderName}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Account Number */}
+                <View style={styles.formField}>
+                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Account Number</Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      { 
+                        backgroundColor: colors.background,
+                        color: colors.text,
+                        borderColor: bankFormErrors.accountNumber ? colors.error : colors.border
+                      }
+                    ]}
+                    value={bankFormData.accountNumber}
+                    onChangeText={(value) => handleBankFormChange('accountNumber', value)}
+                    placeholder="Enter account number"
+                    placeholderTextColor={colors.textSecondary}
+                    keyboardType="numeric"
+                  />
+                  {bankFormErrors.accountNumber && (
+                    <Text style={[styles.fieldError, { color: colors.error }]}>
+                      {bankFormErrors.accountNumber}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Bank Name */}
+                <View style={styles.formField}>
+                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Bank Name</Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      { 
+                        backgroundColor: colors.background,
+                        color: colors.text,
+                        borderColor: bankFormErrors.bankName ? colors.error : colors.border
+                      }
+                    ]}
+                    value={bankFormData.bankName}
+                    onChangeText={(value) => handleBankFormChange('bankName', value)}
+                    placeholder="Enter bank name"
+                    placeholderTextColor={colors.textSecondary}
+                  />
+                  {bankFormErrors.bankName && (
+                    <Text style={[styles.fieldError, { color: colors.error }]}>
+                      {bankFormErrors.bankName}
+                    </Text>
+                  )}
+                </View>
+
+                {/* IFSC Code */}
+                <View style={styles.formField}>
+                  <Text style={[styles.fieldLabel, { color: colors.text }]}>IFSC Code</Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      { 
+                        backgroundColor: colors.background,
+                        color: colors.text,
+                        borderColor: bankFormErrors.ifscCode ? colors.error : colors.border
+                      }
+                    ]}
+                    value={bankFormData.ifscCode}
+                    onChangeText={(value) => handleBankFormChange('ifscCode', value)}
+                    placeholder="Enter IFSC code"
+                    placeholderTextColor={colors.textSecondary}
+                    autoCapitalize="characters"
+                  />
+                  {bankFormErrors.ifscCode && (
+                    <Text style={[styles.fieldError, { color: colors.error }]}>
+                      {bankFormErrors.ifscCode}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Branch Name */}
+                <View style={styles.formField}>
+                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Branch Name</Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      { 
+                        backgroundColor: colors.background,
+                        color: colors.text,
+                        borderColor: bankFormErrors.branchName ? colors.error : colors.border
+                      }
+                    ]}
+                    value={bankFormData.branchName}
+                    onChangeText={(value) => handleBankFormChange('branchName', value)}
+                    placeholder="Enter branch name"
+                    placeholderTextColor={colors.textSecondary}
+                  />
+                  {bankFormErrors.branchName && (
+                    <Text style={[styles.fieldError, { color: colors.error }]}>
+                      {bankFormErrors.branchName}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.formActions}>
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={handleBankFormSubmit}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <Icon name="save" size={16} color="white" />
+                    )}
+                    <Text style={styles.saveButtonText}>
+                      {isSaving ? 'Saving...' : 'Save Bank Details'}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => setShowBankForm(false)}
+                    disabled={isSaving}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </View>
@@ -1422,8 +1784,26 @@ const ProfileScreen = () => {
                   key={quiz._id || index} 
                   style={[styles.quizHistoryItem, { backgroundColor: colors.background }]}
                   onPress={() => {
-                    // Navigate to quiz result
-                    navigation.navigate('QuizResult', { quizId: quiz._id });
+                    console.log('Profile quiz history item clicked:', quiz);
+                    console.log('Quiz ID from quiz.quiz._id:', quiz.quiz?._id);
+                    console.log('Quiz ID from quiz._id:', quiz._id);
+                    console.log('Quiz answers:', quiz.answers);
+                    
+                    // Navigate to quiz result with complete data - match Next.js approach
+                    navigation.navigate('QuizResult', { 
+                      result: {
+                        ...quiz,
+                        // Ensure answers are in the correct format
+                        answers: quiz.answers || []
+                      },
+                      quiz: {
+                        _id: quiz.quiz?._id || quiz._id,
+                        name: quiz.quizTitle,
+                        category: { name: quiz.categoryName },
+                        subcategory: quiz.subcategoryName ? { name: quiz.subcategoryName } : null,
+                        questions: [] // Will be fetched by QuizResult screen
+                      }
+                    });
                   }}
                 >
                   <View style={styles.quizHistoryItemHeader}>
@@ -1471,7 +1851,26 @@ const ProfileScreen = () => {
                   <TouchableOpacity 
                     style={[styles.viewResultButton, { backgroundColor: colors.primary }]}
                     onPress={() => {
-                      navigation.navigate('QuizResult', { quizId: quiz._id });
+                      console.log('Profile View Result button clicked:', quiz);
+                      console.log('Quiz ID from quiz.quiz._id:', quiz.quiz?._id);
+                      console.log('Quiz ID from quiz._id:', quiz._id);
+                      console.log('Quiz answers:', quiz.answers);
+                      
+                      // Navigate to quiz result with complete data - match Next.js approach
+                      navigation.navigate('QuizResult', { 
+                        result: {
+                          ...quiz,
+                          // Ensure answers are in the correct format
+                          answers: quiz.answers || []
+                        },
+                        quiz: {
+                          _id: quiz.quiz?._id || quiz._id,
+                          name: quiz.quizTitle,
+                          category: { name: quiz.categoryName },
+                          subcategory: quiz.subcategoryName ? { name: quiz.subcategoryName } : null,
+                          questions: [] // Will be fetched by QuizResult screen
+                        }
+                      });
                     }}
                   >
                     <Text style={styles.viewResultButtonText}>View Result</Text>
@@ -1481,19 +1880,6 @@ const ProfileScreen = () => {
               ))}
             </View>
           )}
-        </View>
-
-        {/* Logout Button */}
-        <View style={[styles.logoutContainer, { backgroundColor: colors.surface }]}>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
-            <Icon name="logout" size={20} color={colors.error} />
-            <Text style={[styles.logoutButtonText, { color: colors.error }]}>
-              Logout
-            </Text>
-          </TouchableOpacity>
         </View>
 
         {/* Referral Code Section */}
@@ -1531,11 +1917,26 @@ const ProfileScreen = () => {
           </Text>
         </View>
 
+        {/* Logout Button */}
+        <View style={[styles.logoutContainer, { backgroundColor: colors.surface }]}>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <Icon name="logout" size={20} color={colors.error} />
+            <Text style={[styles.logoutButtonText, { color: colors.error }]}>
+              Logout
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        
+
         {/* App Info */}
         <View style={styles.appInfo}>
           <Text style={[styles.appVersion, { color: colors.textSecondary }]}>Version 1.0.0</Text>
           <Text style={[styles.appName, { color: colors.textSecondary }]}>
-            SUBG Quiz App
+            SUBG QUIZ APP
           </Text>
         </View>
       </ScrollView>
@@ -1550,7 +1951,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  
   // Loading & Error States
   loadingContainer: {
     flex: 1,
@@ -1583,12 +1983,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-
   // Profile Header
   profileHeader: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 16,
+    marginHorizontal: 0,
+    marginTop: 0,
+    borderRadius: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1597,7 +1996,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   coverPhoto: {
-    height: 80,
+    height: 60,
     position: 'relative',
   },
   coverOverlay: {
@@ -1686,6 +2085,239 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Stats Section Styles
+  statsCard: {
+    marginHorizontal: 0,
+    marginTop: 0,
+    borderRadius: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  statsHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  statsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+
+  // Achievement Badges Styles
+  achievementCard: {
+    marginHorizontal: 0,
+    marginTop: 0,
+    padding: 16,
+    borderRadius: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  achievementHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  achievementIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  achievementContent: {
+    flex: 1,
+  },
+  achievementLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  achievementValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // Create Content Styles
+  createContentCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  createContentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  createContentIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  createContentTitleContainer: {
+    flex: 1,
+  },
+  createContentTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  createContentSubtitle: {
+    fontSize: 14,
+  },
+  createContentGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  createContentItem: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  createContentItemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  createContentItemContent: {
+    flex: 1,
+  },
+  createContentItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  createContentItemSubtitle: {
+    fontSize: 12,
+  },
+
+  // Bank Details Styles
+  bankDetailsCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  bankDetailsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  bankDetailsIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  bankDetailsTitleContainer: {
+    flex: 1,
+  },
+  bankDetailsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  bankDetailsSubtitle: {
+    fontSize: 14,
+  },
+  bankDetailsButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  bankDetailsButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bankDetailsDisplay: {
+    gap: 12,
+  },
+  bankDetailsItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  bankDetailsLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  bankDetailsValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bankDetailsEmpty: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  bankDetailsEmptyText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  bankDetailsEmptySubtext: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  bankDetailsForm: {
+    marginTop: 16,
+  },
+
   // Subscription Status Styles
   subscriptionCard: {
     marginHorizontal: 20,
@@ -1756,10 +2388,10 @@ const styles = StyleSheet.create({
 
   // Rewards & Achievements Styles
   rewardsCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
+    marginHorizontal: 0,
+    marginTop: 8,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1821,9 +2453,9 @@ const styles = StyleSheet.create({
 
   // About Section
   aboutCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 16,
+    marginHorizontal: 0,
+    marginTop: 8,
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1862,7 +2494,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   contactInfo: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   contactItem: {
     flexDirection: 'row',
@@ -1919,7 +2551,7 @@ const styles = StyleSheet.create({
   },
   fieldError: {
     fontSize: 12,
-    marginTop: 4,
+    marginTop: 8,
   },
   socialSectionTitle: {
     fontSize: 16,
@@ -1961,12 +2593,303 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Level Progression Card
+  levelProgressionCard: {
+    marginHorizontal: 0,
+    marginTop: 8,
+    borderRadius: 8,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  levelProgressionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  levelProgressionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#F59E0B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  levelProgressionTitleContainer: {
+    flex: 1,
+  },
+  levelProgressionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  levelProgressionSubtitle: {
+    fontSize: 14,
+  },
+  currentLevelContainer: {
+    marginBottom: 16,
+  },
+  currentLevelInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  currentLevelIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  currentLevelIconText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  currentLevelDetails: {
+    flex: 1,
+  },
+  currentLevelName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  currentLevelNumber: {
+    fontSize: 14,
+  },
+  levelStatsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 16,
+  },
+  levelStatItem: {
+    alignItems: 'center',
+  },
+  levelStatValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  levelStatLabel: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  nextLevelContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  nextLevelHeader: {
+    marginBottom: 12,
+  },
+  nextLevelTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  nextLevelSubtitle: {
+    fontSize: 14,
+  },
+  nextLevelProgressContainer: {
+    height: 8,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  nextLevelProgressBar: {
+    height: '100%',
+    borderRadius: 8,
+  },
+  nextLevelProgressText: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+
+  // Bank Details Card
+  bankDetailsCard: {
+    margin: 16,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  bankDetailsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  bankDetailsIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bankDetailsTitleContainer: {
+    flex: 1,
+  },
+  bankDetailsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  bankDetailsSubtitle: {
+    fontSize: 14,
+  },
+  bankDetailsDisplay: {
+    gap: 12,
+  },
+  bankDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 12,
+  },
+  bankDetailIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bankDetailContent: {
+    flex: 1,
+  },
+  bankDetailLabel: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  bankDetailValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  editBankButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+    marginTop: 8,
+  },
+  editBankButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  addBankButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  addBankButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bankForm: {
+    padding: 16,
+  },
+  // Monthly Rewards Card
+  monthlyRewardsCard: {
+    marginHorizontal: 0,
+    marginTop: 8,
+    borderRadius: 8,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  monthlyRewardsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  monthlyRewardsIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#8B5CF6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthlyRewardsTitleContainer: {
+    flex: 1,
+  },
+  monthlyRewardsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  monthlyRewardsSubtitle: {
+    fontSize: 14,
+  },
+  monthlyRewardsContent: {
+    gap: 12,
+  },
+  monthlyRewardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 12,
+  },
+  monthlyRewardIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthlyRewardContent: {
+    flex: 1,
+  },
+  monthlyRewardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  monthlyRewardDescription: {
+    fontSize: 12,
+  },
+  viewMonthlyRewardsButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  viewMonthlyRewardsButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
   // Achievement Card
   achievementCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
+    marginHorizontal: 0,
+    marginTop: 8,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1989,10 +2912,10 @@ const styles = StyleSheet.create({
 
   // Stats Card
   statsCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
+    marginHorizontal: 0,
+    marginTop: 8,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -2023,10 +2946,10 @@ const styles = StyleSheet.create({
 
   // Create Content Card
   createContentCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
+    marginHorizontal: 0,
+    marginTop: 8,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -2177,10 +3100,10 @@ const styles = StyleSheet.create({
 
   // Quiz History Styles
   quizHistoryCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
+    marginHorizontal: 0,
+    marginTop: 8,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -2230,7 +3153,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   quizHistoryItem: {
-    width: '48%',
+    width: '100%',
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
@@ -2296,10 +3219,10 @@ const styles = StyleSheet.create({
 
   // Logout
   logoutContainer: {
-    marginHorizontal: 20,
-    marginTop: 16,
+    marginHorizontal: 0,
+    marginTop: 8,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -2323,10 +3246,10 @@ const styles = StyleSheet.create({
 
   // Referral Code Styles
   referralCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
+    marginHorizontal: 0,
+    marginTop: 8,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -2400,9 +3323,9 @@ const styles = StyleSheet.create({
 
   // Profile Completion Styles
   profileCompletionCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 16,
+    marginHorizontal: 0,
+    marginTop: 8,
+    borderRadius: 8,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -2432,12 +3355,12 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: 8,
     marginBottom: 12,
   },
   progressBar: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: 8,
   },
   profileCompletionMessage: {
     fontSize: 14,
@@ -2483,9 +3406,9 @@ const styles = StyleSheet.create({
 
   // Subscription Status Styles
   subscriptionCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 16,
+    marginHorizontal: 0,
+    marginTop: 8,
+    borderRadius: 8,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -2532,7 +3455,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#345672',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,

@@ -128,7 +128,12 @@ const LevelDetailScreen = () => {
   const handleConfirmQuizStart = () => {
     setShowQuizModal(false);
     if (selectedQuiz) {
-      navigation.navigate('Quiz', { quizId: selectedQuiz._id });
+      // Store navigation data like Next.js pattern
+      navigation.navigate('AttemptQuiz', { 
+        quiz: selectedQuiz,
+        fromPage: 'level',
+        levelNumber: levelNumber
+      });
     }
   };
 

@@ -26,12 +26,12 @@ const ReferralSection = ({
       return;
     }
 
-    const shareMessage = `Join me on SUBG Quiz App! Use my referral code: ${user.referralCode} to get exclusive benefits. Download now!`;
+    const shareMessage = `Join me on SUBG QUIZ APP! Use my referral code: ${user.referralCode} to get exclusive benefits. Download now!`;
 
     try {
       await Share.share({
         message: shareMessage,
-        title: 'Join SUBG Quiz App',
+        title: 'Join SUBG QUIZ APP',
       });
     } catch (error) {
       console.error('Error sharing:', error);

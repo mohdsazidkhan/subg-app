@@ -160,9 +160,33 @@ const QuizScreen = () => {
   const submitQuiz = async () => {
     try {
       setSubmitting(true);
-      const response = await API.submitQuiz(quizId, { answers });
-      if (response.success) {
-        navigation.navigate('QuizResult', { quizId, result: response.data });
+      
+      // Convert answers from array of indices to array of option strings
+      const answersArray = answers.map((answerIndex, questionIndex) => {
+        if (answerIndex === -1 || answerIndex === undefined || answerIndex === null) {
+          return 'SKIP'; // Handle unanswered questions
+        }
+        return quiz.questions[questionIndex].options[answerIndex]; // Return the actual option text
+      });
+      
+      const response = await API.submitQuiz({
+        quizId: quizId,
+        answers: answersArray,
+        timeTaken: quiz.timeLimit ? (quiz.timeLimit * 60 - timeRemaining) : 300, // 5 minutes default
+      });
+      
+      // Backend returns the result data directly, not wrapped in success/data
+      if (response && response.scorePercentage !== undefined) {
+        navigation.navigate('QuizResult', { 
+          quizId, 
+          result: response,
+          quiz: quiz 
+        });
+      } else {
+        showMessage({
+          message: 'Failed to submit quiz - Invalid response',
+          type: 'danger',
+        });
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);

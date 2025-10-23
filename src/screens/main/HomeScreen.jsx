@@ -501,7 +501,7 @@ const HomeScreen = () => {
             <Logo size={60} showText={false} />
             <View style={styles.headerText}>
               <Text style={[styles.welcomeText, { color: colors?.text || '#000000' }]}>
-                Welcome to SUBG Quiz
+                Welcome to SUBG QUIZ
               </Text>
               <Text style={[styles.appTitle, { color: colors?.text || '#000000' }]}>
                 SUBG QUIZ! 🎯
