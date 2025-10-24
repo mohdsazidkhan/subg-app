@@ -92,7 +92,17 @@ const ProfileScreen = () => {
           rank: profileRes.user.rank || profileRes.user.globalRank || 0,
           achievements: profileRes.user.badges?.length || profileRes.user.achievements?.length || 0,
         });
-        
+
+        setBankFormData({
+          accountHolderName: profileRes.user.bankDetail?.accountHolderName || '',
+          accountNumber: profileRes.user.bankDetail?.accountNumber || '',
+          bankName: profileRes.user.bankDetail?.bankName || '',
+          ifscCode: profileRes.user.bankDetail?.ifscCode || '',
+          branchName: profileRes.user.bankDetail?.branchName || ''
+        });
+
+        setBankDetails(profileRes.user.bankDetail || null);
+        console.log('🔍 Bank details set:', profileRes.user.bankDetail);
         // Initialize edit profile data
         setEditProfileData({
           name: profileRes.user.name || '',
@@ -156,47 +166,6 @@ const ProfileScreen = () => {
         console.error('Error fetching quiz history:', quizErr);
         setPlayedQuizzes([]); // Still show profile even if quizzes fail
       }
-
-      // Check if user is eligible for bank details - match Next.js approach
-      console.log('🔍 Checking bank details eligibility for user:', profileRes?.user);
-      if (isEligibleForBankDetails(profileRes?.user)) {
-        console.log('✅ User is eligible for bank details, fetching...');
-        try {
-          const bankRes = await API.getBankDetails();
-          console.log('📦 Bank details API response:', bankRes);
-          if (bankRes.success && bankRes.bankDetail) {
-            console.log('✅ Bank details found:', bankRes.bankDetail);
-            setBankDetails(bankRes.bankDetail);
-            // Pre-fill form data with existing bank details
-            setBankFormData({
-              accountHolderName: bankRes.bankDetail.accountHolderName,
-              accountNumber: bankRes.bankDetail.accountNumber,
-              bankName: bankRes.bankDetail.bankName,
-              ifscCode: bankRes.bankDetail.ifscCode,
-              branchName: bankRes.bankDetail.branchName
-            });
-          } else {
-            console.log('❌ No bank details in response:', bankRes);
-          }
-        } catch (bankErr) {
-          // Check if it's a 404 error (no bank details yet) vs other errors
-          if (bankErr.response && bankErr.response.status === 404) {
-            // User doesn't have bank details yet - this is normal
-            console.log('ℹ️ No bank details found yet - user can add them');
-            setBankDetails(null);
-          } else if (bankErr.message && bankErr.message.includes('Admin access required')) {
-            // User is not authorized to access bank details
-            console.log('⚠️ User not authorized for bank details - this is expected for non-eligible users');
-            setBankDetails(null);
-          } else {
-            // Other error occurred
-            console.error('❌ Error fetching bank details:', bankErr);
-            // Don't show error to user since bank details are optional
-          }
-        }
-      } else {
-        console.log('❌ User is not eligible for bank details');
-      }
     } catch (error) {
       console.error('Profile fetch error:', error);
       setError('Failed to load profile');
@@ -211,16 +180,6 @@ const ProfileScreen = () => {
     setRefreshing(false);
   };
 
-  // All users can now access bank details
-  const isEligibleForBankDetails = (user) => {
-    if (!user) {
-      console.log('❌ No user data for eligibility check');
-      return false;
-    }
-    
-    // All users are now eligible for bank details
-    return true;
-  };
 
   // Check if user has Free or Basic plan subscription
   const isFreeOrBasicPlanUser = (user) => {
@@ -325,32 +284,56 @@ const ProfileScreen = () => {
     }
   };
 
-  const handleSaveBankDetails = async () => {
+  const handleBankFormSubmit = async () => {
     try {
+      console.log('🔍 Submitting bank form data:', bankFormData);
+      
+      // Validate form
+      const errors = {};
+      if (!bankFormData.accountHolderName?.trim()) {
+        errors.accountHolderName = 'Account holder name is required';
+      }
+      if (!bankFormData.accountNumber?.trim()) {
+        errors.accountNumber = 'Account number is required';
+      }
+      if (!bankFormData.bankName?.trim()) {
+        errors.bankName = 'Bank name is required';
+      }
+      if (!bankFormData.ifscCode?.trim()) {
+        errors.ifscCode = 'IFSC code is required';
+      }
+      if (!bankFormData.branchName?.trim()) {
+        errors.branchName = 'Branch name is required';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        console.log('❌ Form validation errors:', errors);
+        setBankFormErrors(errors);
+        return;
+      }
+
       setIsSaving(true);
       setBankFormErrors({});
-      
+
+      console.log('📤 Sending API request to save bank details...');
       const response = await API.saveBankDetails(bankFormData);
+      console.log('📥 API response:', response);
+      
       if (response.success) {
-        showMessage({
-          message: 'Bank details saved successfully!',
-          type: 'success',
-        });
+        console.log('✅ Bank details saved successfully');
+        Alert.alert('Success', 'Bank details saved successfully!');
         setShowBankForm(false);
-        setBankDetails(response.bankDetail);
+        // Refresh profile data to get updated bank details
+        console.log('🔄 Refreshing profile data...');
+        await fetchProfileData();
+        console.log('✅ Profile data refreshed');
       } else {
-        setBankFormErrors(response.errors || {});
-        showMessage({
-          message: 'Failed to save bank details',
-          type: 'danger',
-        });
+        console.log('❌ API returned error:', response.message);
+        Alert.alert('Error', response.message || 'Failed to save bank details');
       }
     } catch (error) {
-      console.error('Error saving bank details:', error);
-      showMessage({
-        message: 'Error saving bank details',
-        type: 'danger',
-      });
+      console.error('❌ Error saving bank details:', error);
+      Alert.alert('Error', 'Failed to save bank details. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -1170,7 +1153,7 @@ const ProfileScreen = () => {
           </View>
         </View>
 
-        {isEligibleForBankDetails(user) && (
+        {bankDetails !== null && (
           <View style={[styles.bankDetailsCard, { backgroundColor: colors.surface }]}>
             <View style={styles.bankDetailsHeader}>
               <View style={styles.bankDetailsIconContainer}>
@@ -2388,6 +2371,7 @@ const styles = StyleSheet.create({
   },
   bankDetailsSubtitle: {
     fontSize: 14,
+    marginLeft: 8
   },
   bankDetailsDisplay: {
     gap: 12,
@@ -2395,9 +2379,9 @@ const styles = StyleSheet.create({
   bankDetailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 8,
     borderRadius: 8,
-    gap: 12,
+    gap: 4,
   },
   bankDetailIcon: {
     width: 32,
