@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import LinearGradient from 'react-native-linear-gradient';
+import SocialIcon from "react-native-vector-icons/FontAwesome6";
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import API from '../../services/api';
@@ -211,55 +211,15 @@ const ProfileScreen = () => {
     setRefreshing(false);
   };
 
-  const getSubscriptionStatusText = (subscriptionStatus) => {
-    switch (subscriptionStatus) {
-      case 'free':
-        return 'FREE';
-      case 'basic':
-        return 'BASIC';
-      case 'premium':
-        return 'PREMIUM';
-      case 'pro':
-        return 'PRO';
-      default:
-        return 'NO SUBSCRIPTION';
-    }
-  };
-
-  const getSubscriptionStatusColor = (subscriptionStatus) => {
-    switch (subscriptionStatus) {
-      case 'free':
-        return colors.warning;
-      case 'basic':
-        return '#F59E0B';
-      case 'premium':
-        return '#EF4444';
-      case 'pro':
-        return '#8B5CF6';
-      default:
-        return colors.textSecondary;
-    }
-  };
-
-  // Check if user is eligible for bank details (level 10 or pro subscription)
+  // All users can now access bank details
   const isEligibleForBankDetails = (user) => {
     if (!user) {
       console.log('❌ No user data for eligibility check');
       return false;
     }
     
-    const isLevelTen = user.levelInfo?.currentLevel?.number === 10;
-    const isProPlan = user.subscriptionStatus === 'pro';
-    
-    console.log('🔍 Bank Details Eligibility Check:', {
-      userLevel: user.levelInfo?.currentLevel?.number,
-      subscriptionStatus: user.subscriptionStatus,
-      isLevelTen,
-      isProPlan,
-      isEligible: isLevelTen || isProPlan
-    });
-    
-    return isLevelTen || isProPlan;
+    // All users are now eligible for bank details
+    return true;
   };
 
   // Check if user has Free or Basic plan subscription
@@ -415,9 +375,9 @@ const ProfileScreen = () => {
   };
 
   // Calculate stats - use both profile data and quiz history
-  const quizzesPlayed = Math.max(playedQuizzes.length, profileStats.quizzesCompleted);
-  const highScoreQuizzes = playedQuizzes.filter(quiz => quiz.score >= 80).length;
-  const highScoreRate = quizzesPlayed > 0 ? Math.round((highScoreQuizzes / quizzesPlayed) * 100) : 0;
+  const quizzesPlayed = user?.monthlyProgress?.totalQuizAttempts || 0;
+  const highScoreQuizzes = user?.monthlyProgress?.highScoreWins || 0;
+  const accuracy = user?.monthlyProgress?.accuracy || 0;
 
   if (loading) {
     return (
@@ -480,12 +440,9 @@ const ProfileScreen = () => {
         {/* Profile Header - Match Next.js Design */}
         <View style={[styles.profileHeader, { backgroundColor: colors.surface }]}>
           {/* Cover Photo Area */}
-          <LinearGradient
-            colors={colors.isDark ? ['#1F2937', '#374151'] : ['#DC2626', '#F59E0B']}
-            style={styles.coverPhoto}
-          >
+          <View style={[styles.coverPhoto, { backgroundColor: colors.surface }]}>
             <View style={styles.coverOverlay} />
-          </LinearGradient>
+          </View>
           
           {/* Profile Info */}
           <View style={styles.profileInfo}>
@@ -499,11 +456,11 @@ const ProfileScreen = () => {
             </View>
             
             <View style={styles.profileDetails}>
-              <Text style={[styles.userName, { color: colors.text }]}>
+              <Text style={[styles.studentName, { color: colors.text }]}>
                 {user?.name || 'User'}
               </Text>
               {user?.username && (
-                <Text style={[styles.username, { color: colors.primary }]}>
+                <Text style={[styles.username, { color: colors.secondary }]}>
                   @{user.username}
                 </Text>
               )}
@@ -580,39 +537,43 @@ const ProfileScreen = () => {
                     Social Media
                   </Text>
                   <View style={styles.socialLinksList}>
-                    {user?.socialLinks?.instagram && (
-                      <TouchableOpacity style={styles.socialLink}>
-                        <Icon name="instagram" size={20} color="#E4405F" />
-                        <Text style={[styles.socialLinkText, { color: colors.text }]}>
-                          Instagram
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    {user?.socialLinks?.facebook && (
-                      <TouchableOpacity style={styles.socialLink}>
-                        <Icon name="facebook" size={20} color="#1877F2" />
-                        <Text style={[styles.socialLinkText, { color: colors.text }]}>
-                          Facebook
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    {user?.socialLinks?.x && (
-                      <TouchableOpacity style={styles.socialLink}>
-                        <Icon name="twitter" size={20} color="#000000" />
-                        <Text style={[styles.socialLinkText, { color: colors.text }]}>
-                          X (Twitter)
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    {user?.socialLinks?.youtube && (
-                      <TouchableOpacity style={styles.socialLink}>
-                        <Icon name="youtube" size={20} color="#FF0000" />
-                        <Text style={[styles.socialLinkText, { color: colors.text }]}>
-                          YouTube
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
+      {user?.socialLinks?.instagram && (
+        <TouchableOpacity
+          style={[styles.socialLink]}
+          onPress={() => openLink(user.socialLinks.instagram)}
+        >
+          <SocialIcon name="instagram" size={22} color="#E4405F" solid />
+        </TouchableOpacity>
+      )}
+
+      {user?.socialLinks?.facebook && (
+        <TouchableOpacity
+          style={[styles.socialLink]}
+          onPress={() => openLink(user.socialLinks.facebook)}
+        >
+          <SocialIcon name="facebook" size={22} color="#1877F2" />
+        </TouchableOpacity>
+      )}
+
+      {user?.socialLinks?.x && (
+        <TouchableOpacity
+          style={[styles.socialLink]}
+          onPress={() => openLink(user.socialLinks.x)}
+        >
+          <SocialIcon name="x-twitter" size={22} color="#000000" /> 
+          {/* ✅ Latest FontAwesome6 icon for X */}
+        </TouchableOpacity>
+      )}
+
+      {user?.socialLinks?.youtube && (
+        <TouchableOpacity
+          style={[styles.socialLink]}
+          onPress={() => openLink(user.socialLinks.youtube)}
+        >
+          <SocialIcon name="youtube" size={22} color="#FF0000" />
+        </TouchableOpacity>
+      )}
+    </View>
                 </View>
               )}
             </View>
@@ -864,10 +825,21 @@ const ProfileScreen = () => {
         {/* Subscription Status */}
         <View style={[styles.subscriptionCard, { backgroundColor: colors.surface }]}>
           <View style={styles.subscriptionHeader}>
+            <View style={styles.subscriptionTitleContainer}>
             <Icon name="star" size={24} color={colors.primary} />
             <Text style={[styles.subscriptionTitle, { color: colors.text }]}>
               Subscription Status
             </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.subscriptionButton}
+              onPress={() => navigation.navigate('Subscription')}
+            >
+              <Icon name="rocket-launch" size={16} color="white" />
+              <Text style={styles.subscriptionButtonText}>
+                {user?.subscriptionStatus === 'free' ? 'Upgrade Plan' : 'Manage'}
+              </Text>
+            </TouchableOpacity>
           </View>
           
           <View style={styles.subscriptionInfo}>
@@ -904,15 +876,7 @@ const ProfileScreen = () => {
             )}
           </View>
           
-          <TouchableOpacity
-            style={styles.subscriptionButton}
-            onPress={() => navigation.navigate('Subscription')}
-          >
-            <Icon name="rocket-launch" size={16} color="white" />
-            <Text style={styles.subscriptionButtonText}>
-              {user?.subscriptionStatus === 'free' ? 'Upgrade Plan' : 'Manage Subscription'}
-            </Text>
-          </TouchableOpacity>
+          
         </View>
 
         {/* Achievement Badges */}
@@ -1013,30 +977,61 @@ const ProfileScreen = () => {
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: colors.success }]}>{highScoreQuizzes}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>High Scores</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>High Scores Quizzes</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.warning }]}>{highScoreRate}%</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Success Rate</Text>
+              <Text style={[styles.statValue, { color: colors.warning }]}>{accuracy}%</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Accuracy</Text>
             </View>
           </View>
         </View>
 
-        {/* Achievement Badges Section */}
-        <View style={[styles.achievementCard, { backgroundColor: colors.surface }]}>
-          <View style={styles.achievementHeader}>
-            <View style={styles.achievementIconContainer}>
-              <Icon name="emoji-events" size={20} color={colors.success} />
+        {/* Level Progression Card - Match Next.js Design */}
+        <View style={[styles.levelProgressionCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.levelProgressionHeader}>
+            <View style={styles.levelProgressionIconContainer}>
+              <Icon name="emoji-events" size={24} color={colors.primary} />
             </View>
-            <View style={styles.achievementContent}>
-              <Text style={[styles.achievementLabel, { color: colors.textSecondary }]}>Achievement Badges</Text>
-              <Text style={[styles.achievementValue, { color: colors.text }]}>
-                {user?.badges && user.badges.length > 0
-                  ? user.badges.join(', ')
-                  : 'No badges yet'}
+            <View style={styles.levelProgressionTitleContainer}>
+              <Text style={[styles.levelProgressionTitle, { color: colors.text }]}>
+                Level Progression
+              </Text>
+              <Text style={[styles.levelProgressionSubtitle, { color: colors.textSecondary }]}>
+                Your journey from Starter to Legend
               </Text>
             </View>
           </View>
+          
+          {/* Next Level Progress */}
+          {user?.levelInfo?.nextLevel && (
+            <View style={styles.nextLevelContainer}>
+              <View style={styles.nextLevelHeader}>
+                <Text style={[styles.nextLevelTitle, { color: colors.text }]}>
+                  Next Level: {user.levelInfo.nextLevel.name}
+                </Text>
+                <Text style={[styles.nextLevelSubtitle, { color: colors.textSecondary }]}>
+                  {Math.max(0, user.levelInfo.nextLevel.quizzesRequired - highScoreQuizzes)} more quizzes needed
+                </Text>
+              </View>
+              
+              {/* Progress Bar */}
+              <View style={[styles.nextLevelProgressContainer, { backgroundColor: colors.border }]}>
+                <View 
+                  style={[
+                    styles.nextLevelProgressBar,
+                    { 
+                      width: `${user.levelInfo.nextLevel ? Math.min((highScoreQuizzes / user.levelInfo.nextLevel.quizzesRequired) * 100, 100) : 100}%`,
+                      backgroundColor: colors.primary
+                    }
+                  ]}
+                />
+              </View>
+              
+              <Text style={[styles.nextLevelProgressText, { color: colors.textSecondary }]}>
+              {user.levelInfo.nextLevel ? Math.round((highScoreQuizzes / user.levelInfo.nextLevel.quizzesRequired) * 100) > 100 ? 100 : Math.round((highScoreQuizzes / user.levelInfo.nextLevel.quizzesRequired) * 100) : 100}% complete
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Create Content Section - Match Next.js Design */}
@@ -1084,100 +1079,7 @@ const ProfileScreen = () => {
           </View>
         </View>
 
-        {/* Level Progression Card - Match Next.js Design */}
-        <View style={[styles.levelProgressionCard, { backgroundColor: colors.surface }]}>
-          <View style={styles.levelProgressionHeader}>
-            <View style={styles.levelProgressionIconContainer}>
-              <Icon name="emoji-events" size={24} color={colors.primary} />
-            </View>
-            <View style={styles.levelProgressionTitleContainer}>
-              <Text style={[styles.levelProgressionTitle, { color: colors.text }]}>
-                Level Progression
-              </Text>
-              <Text style={[styles.levelProgressionSubtitle, { color: colors.textSecondary }]}>
-                Your journey from Starter to Legend
-              </Text>
-            </View>
-          </View>
-          
-          {/* Current Level Display */}
-          <View style={styles.currentLevelContainer}>
-            <View style={styles.currentLevelInfo}>
-              <View style={[styles.currentLevelIcon, { backgroundColor: colors.primary }]}>
-                <Text style={styles.currentLevelIconText}>
-                  {user?.levelInfo?.currentLevel?.name?.charAt(0) || 'L'}
-                </Text>
-              </View>
-              <View style={styles.currentLevelDetails}>
-                <Text style={[styles.currentLevelName, { color: colors.text }]}>
-                  {user?.levelInfo?.currentLevel?.name || 'Level 0'}
-                </Text>
-                <Text style={[styles.currentLevelNumber, { color: colors.textSecondary }]}>
-                  Level {user?.levelInfo?.currentLevel?.number || 0}
-                </Text>
-              </View>
-            </View>
-            
-            {/* Level Stats */}
-            <View style={styles.levelStatsGrid}>
-              <View style={styles.levelStatItem}>
-                <Text style={[styles.levelStatValue, { color: colors.success }]}>
-                  {user?.levelInfo?.quizzesPlayed || 0}
-                </Text>
-                <Text style={[styles.levelStatLabel, { color: colors.textSecondary }]}>
-                  Quizzes Played
-                </Text>
-              </View>
-              <View style={styles.levelStatItem}>
-                <Text style={[styles.levelStatValue, { color: colors.warning }]}>
-                  {user?.levelInfo?.highScoreQuizzes || 0}
-                </Text>
-                <Text style={[styles.levelStatLabel, { color: colors.textSecondary }]}>
-                  High Scores
-                </Text>
-              </View>
-              <View style={styles.levelStatItem}>
-                <Text style={[styles.levelStatValue, { color: colors.primary }]}>
-                  {user?.levelInfo?.averageScore || 0}%
-                </Text>
-                <Text style={[styles.levelStatLabel, { color: colors.textSecondary }]}>
-                  Average Score
-                </Text>
-              </View>
-            </View>
-          </View>
-          
-          {/* Next Level Progress */}
-          {user?.levelInfo?.nextLevel && (
-            <View style={styles.nextLevelContainer}>
-              <View style={styles.nextLevelHeader}>
-                <Text style={[styles.nextLevelTitle, { color: colors.text }]}>
-                  Next Level: {user.levelInfo.nextLevel.name}
-                </Text>
-                <Text style={[styles.nextLevelSubtitle, { color: colors.textSecondary }]}>
-                  {user.levelInfo.quizzesNeededForNextLevel || 0} more quizzes needed
-                </Text>
-              </View>
-              
-              {/* Progress Bar */}
-              <View style={[styles.nextLevelProgressContainer, { backgroundColor: colors.border }]}>
-                <View 
-                  style={[
-                    styles.nextLevelProgressBar,
-                    { 
-                      width: `${user.levelInfo.progressToNextLevel || 0}%`,
-                      backgroundColor: colors.primary
-                    }
-                  ]}
-                />
-              </View>
-              
-              <Text style={[styles.nextLevelProgressText, { color: colors.textSecondary }]}>
-                {user.levelInfo.progressToNextLevel || 0}% complete
-              </Text>
-            </View>
-          )}
-        </View>
+        
 
         {/* Rewards & Achievements Section */}
         <View style={[styles.rewardsCard, { backgroundColor: colors.surface }]}>
@@ -1213,270 +1115,6 @@ const ProfileScreen = () => {
             </Text>
           </View>
         </View>
-
-        {/* Bank Details Section - Only shown for eligible users (level 10 or pro subscription) */}
-        {isEligibleForBankDetails(user) && (
-          <View style={[styles.bankDetailsCard, { backgroundColor: colors.surface }]}>
-            <View style={styles.bankDetailsHeader}>
-              <View style={styles.bankDetailsIconContainer}>
-                <Icon name="account-balance" size={24} color={colors.primary} />
-              </View>
-              <View style={styles.bankDetailsTitleContainer}>
-                <Text style={[styles.bankDetailsTitle, { color: colors.text }]}>
-                  Bank Details
-                </Text>
-                <Text style={[styles.bankDetailsSubtitle, { color: colors.textSecondary }]}>
-                  {bankDetails ? 'Your banking information' : 'Add your bank account information'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Bank Details Display */}
-            {bankDetails && !showBankForm ? (
-              <View style={styles.bankDetailsDisplay}>
-                <View style={[styles.bankDetailItem, { backgroundColor: colors.background }]}>
-                  <View style={styles.bankDetailIcon}>
-                    <Icon name="person" size={20} color={colors.primary} />
-                  </View>
-                  <View style={styles.bankDetailContent}>
-                    <Text style={[styles.bankDetailLabel, { color: colors.textSecondary }]}>
-                      Account Holder
-                    </Text>
-                    <Text style={[styles.bankDetailValue, { color: colors.text }]}>
-                      {bankDetails.accountHolderName}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={[styles.bankDetailItem, { backgroundColor: colors.background }]}>
-                  <View style={styles.bankDetailIcon}>
-                    <Icon name="credit-card" size={20} color={colors.success} />
-                  </View>
-                  <View style={styles.bankDetailContent}>
-                    <Text style={[styles.bankDetailLabel, { color: colors.textSecondary }]}>
-                      Account Number
-                    </Text>
-                    <Text style={[styles.bankDetailValue, { color: colors.text }]}>
-                      ****{bankDetails.accountNumber.slice(-4)}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={[styles.bankDetailItem, { backgroundColor: colors.background }]}>
-                  <View style={styles.bankDetailIcon}>
-                    <Icon name="business" size={20} color={colors.warning} />
-                  </View>
-                  <View style={styles.bankDetailContent}>
-                    <Text style={[styles.bankDetailLabel, { color: colors.textSecondary }]}>
-                      Bank Name
-                    </Text>
-                    <Text style={[styles.bankDetailValue, { color: colors.text }]}>
-                      {bankDetails.bankName}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={[styles.bankDetailItem, { backgroundColor: colors.background }]}>
-                  <View style={styles.bankDetailIcon}>
-                    <Icon name="code" size={20} color={colors.error} />
-                  </View>
-                  <View style={styles.bankDetailContent}>
-                    <Text style={[styles.bankDetailLabel, { color: colors.textSecondary }]}>
-                      IFSC Code
-                    </Text>
-                    <Text style={[styles.bankDetailValue, { color: colors.text }]}>
-                      {bankDetails.ifscCode}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={[styles.bankDetailItem, { backgroundColor: colors.background }]}>
-                  <View style={styles.bankDetailIcon}>
-                    <Icon name="location-on" size={20} color={colors.primary} />
-                  </View>
-                  <View style={styles.bankDetailContent}>
-                    <Text style={[styles.bankDetailLabel, { color: colors.textSecondary }]}>
-                      Branch Name
-                    </Text>
-                    <Text style={[styles.bankDetailValue, { color: colors.text }]}>
-                      {bankDetails.branchName}
-                    </Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.editBankButton, { backgroundColor: colors.primary }]}
-                  onPress={() => setShowBankForm(true)}
-                >
-                  <Icon name="edit" size={16} color="white" />
-                  <Text style={styles.editBankButtonText}>Edit Bank Details</Text>
-                </TouchableOpacity>
-              </View>
-            ) : showBankForm ? (
-              /* Bank Details Form */
-              <View style={styles.bankForm}>
-                <Text style={[styles.formTitle, { color: colors.text }]}>
-                  {bankDetails ? 'Edit Bank Details' : 'Add Bank Details'}
-                </Text>
-                
-                {/* Account Holder Name */}
-                <View style={styles.formField}>
-                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Account Holder Name</Text>
-                  <TextInput
-                    style={[
-                      styles.textInput,
-                      { 
-                        backgroundColor: colors.background,
-                        color: colors.text,
-                        borderColor: bankFormErrors.accountHolderName ? colors.error : colors.border
-                      }
-                    ]}
-                    value={bankFormData.accountHolderName}
-                    onChangeText={(value) => handleBankFormChange('accountHolderName', value)}
-                    placeholder="Enter account holder name"
-                    placeholderTextColor={colors.textSecondary}
-                  />
-                  {bankFormErrors.accountHolderName && (
-                    <Text style={[styles.fieldError, { color: colors.error }]}>
-                      {bankFormErrors.accountHolderName}
-                    </Text>
-                  )}
-                </View>
-
-                {/* Account Number */}
-                <View style={styles.formField}>
-                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Account Number</Text>
-                  <TextInput
-                    style={[
-                      styles.textInput,
-                      { 
-                        backgroundColor: colors.background,
-                        color: colors.text,
-                        borderColor: bankFormErrors.accountNumber ? colors.error : colors.border
-                      }
-                    ]}
-                    value={bankFormData.accountNumber}
-                    onChangeText={(value) => handleBankFormChange('accountNumber', value)}
-                    placeholder="Enter account number"
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="numeric"
-                  />
-                  {bankFormErrors.accountNumber && (
-                    <Text style={[styles.fieldError, { color: colors.error }]}>
-                      {bankFormErrors.accountNumber}
-                    </Text>
-                  )}
-                </View>
-
-                {/* Bank Name */}
-                <View style={styles.formField}>
-                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Bank Name</Text>
-                  <TextInput
-                    style={[
-                      styles.textInput,
-                      { 
-                        backgroundColor: colors.background,
-                        color: colors.text,
-                        borderColor: bankFormErrors.bankName ? colors.error : colors.border
-                      }
-                    ]}
-                    value={bankFormData.bankName}
-                    onChangeText={(value) => handleBankFormChange('bankName', value)}
-                    placeholder="Enter bank name"
-                    placeholderTextColor={colors.textSecondary}
-                  />
-                  {bankFormErrors.bankName && (
-                    <Text style={[styles.fieldError, { color: colors.error }]}>
-                      {bankFormErrors.bankName}
-                    </Text>
-                  )}
-                </View>
-
-                {/* IFSC Code */}
-                <View style={styles.formField}>
-                  <Text style={[styles.fieldLabel, { color: colors.text }]}>IFSC Code</Text>
-                  <TextInput
-                    style={[
-                      styles.textInput,
-                      { 
-                        backgroundColor: colors.background,
-                        color: colors.text,
-                        borderColor: bankFormErrors.ifscCode ? colors.error : colors.border
-                      }
-                    ]}
-                    value={bankFormData.ifscCode}
-                    onChangeText={(value) => handleBankFormChange('ifscCode', value)}
-                    placeholder="Enter IFSC code"
-                    placeholderTextColor={colors.textSecondary}
-                    autoCapitalize="characters"
-                  />
-                  {bankFormErrors.ifscCode && (
-                    <Text style={[styles.fieldError, { color: colors.error }]}>
-                      {bankFormErrors.ifscCode}
-                    </Text>
-                  )}
-                </View>
-
-                {/* Branch Name */}
-                <View style={styles.formField}>
-                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Branch Name</Text>
-                  <TextInput
-                    style={[
-                      styles.textInput,
-                      { 
-                        backgroundColor: colors.background,
-                        color: colors.text,
-                        borderColor: bankFormErrors.branchName ? colors.error : colors.border
-                      }
-                    ]}
-                    value={bankFormData.branchName}
-                    onChangeText={(value) => handleBankFormChange('branchName', value)}
-                    placeholder="Enter branch name"
-                    placeholderTextColor={colors.textSecondary}
-                  />
-                  {bankFormErrors.branchName && (
-                    <Text style={[styles.fieldError, { color: colors.error }]}>
-                      {bankFormErrors.branchName}
-                    </Text>
-                  )}
-                </View>
-
-                {/* Form Actions */}
-                <View style={styles.formActions}>
-                  <TouchableOpacity
-                    style={[styles.cancelButton, { backgroundColor: colors.border }]}
-                    onPress={() => setShowBankForm(false)}
-                  >
-                    <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={[styles.saveButton, { backgroundColor: colors.primary }]}
-                    onPress={handleSaveBankDetails}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                      <>
-                        <Icon name="save" size={16} color="white" />
-                        <Text style={styles.saveButtonText}>Save Bank Details</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={[styles.addBankButton, { backgroundColor: colors.primary }]}
-                onPress={() => setShowBankForm(true)}
-              >
-                <Icon name="add" size={16} color="white" />
-                <Text style={styles.addBankButtonText}>Add Bank Details</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
 
         {/* Monthly Rewards Section */}
         <View style={[styles.monthlyRewardsCard, { backgroundColor: colors.surface }]}>
@@ -1985,7 +1623,7 @@ const styles = StyleSheet.create({
   },
   // Profile Header
   profileHeader: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 0,
     borderRadius: 0,
     shadowColor: '#000',
@@ -2004,7 +1642,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 20,
+    height: 60,
     backgroundColor: 'rgba(255,255,255,0.1)',
   },
   profileInfo: {
@@ -2054,9 +1692,9 @@ const styles = StyleSheet.create({
   profileDetails: {
     flex: 1,
     marginLeft: 16,
-    marginBottom: 8,
+    marginBottom: 0,
   },
-  userName: {
+  studentName: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 4,
@@ -2075,9 +1713,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#EF4444',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: 8,
     gap: 4,
-    marginBottom: 8,
+    marginBottom: 20,
   },
   editButtonText: {
     color: 'white',
@@ -2087,7 +1725,7 @@ const styles = StyleSheet.create({
 
   // Stats Section Styles
   statsCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 0,
     borderRadius: 0,
     shadowColor: '#000',
@@ -2098,8 +1736,8 @@ const styles = StyleSheet.create({
   },
   statsHeader: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: 0,
+    paddingBottom: 0,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },
@@ -2128,7 +1766,7 @@ const styles = StyleSheet.create({
 
   // Achievement Badges Styles
   achievementCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 0,
     padding: 16,
     borderRadius: 0,
@@ -2167,7 +1805,7 @@ const styles = StyleSheet.create({
 
   // Create Content Styles
   createContentCard: {
-    marginHorizontal: 20,
+    marginHorizontal: 4,
     marginTop: 16,
     padding: 16,
     borderRadius: 16,
@@ -2236,7 +1874,7 @@ const styles = StyleSheet.create({
 
   // Bank Details Styles
   bankDetailsCard: {
-    marginHorizontal: 20,
+    marginHorizontal: 4,
     marginTop: 16,
     padding: 16,
     borderRadius: 16,
@@ -2262,6 +1900,7 @@ const styles = StyleSheet.create({
   },
   bankDetailsTitleContainer: {
     flex: 1,
+    marginLeft: 10,
   },
   bankDetailsTitle: {
     fontSize: 18,
@@ -2320,7 +1959,7 @@ const styles = StyleSheet.create({
 
   // Subscription Status Styles
   subscriptionCard: {
-    marginHorizontal: 20,
+    marginHorizontal: 4,
     marginTop: 16,
     padding: 16,
     borderRadius: 16,
@@ -2388,7 +2027,7 @@ const styles = StyleSheet.create({
 
   // Rewards & Achievements Styles
   rewardsCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     padding: 16,
     borderRadius: 8,
@@ -2453,7 +2092,7 @@ const styles = StyleSheet.create({
 
   // About Section
   aboutCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     borderRadius: 8,
     shadowColor: '#000',
@@ -2514,7 +2153,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   socialLinksList: {
-    gap: 8,
+    gap: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flex: 1,
   },
   socialLink: {
     flexDirection: 'row',
@@ -2595,7 +2238,7 @@ const styles = StyleSheet.create({
 
   // Level Progression Card
   levelProgressionCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     borderRadius: 8,
     padding: 16,
@@ -2608,7 +2251,7 @@ const styles = StyleSheet.create({
   levelProgressionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 0,
     gap: 12,
   },
   levelProgressionIconContainer: {
@@ -2807,7 +2450,7 @@ const styles = StyleSheet.create({
   },
   // Monthly Rewards Card
   monthlyRewardsCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     borderRadius: 8,
     padding: 16,
@@ -2886,7 +2529,7 @@ const styles = StyleSheet.create({
 
   // Achievement Card
   achievementCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     padding: 16,
     borderRadius: 8,
@@ -2912,7 +2555,7 @@ const styles = StyleSheet.create({
 
   // Stats Card
   statsCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     padding: 16,
     borderRadius: 8,
@@ -2946,7 +2589,7 @@ const styles = StyleSheet.create({
 
   // Create Content Card
   createContentCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     padding: 16,
     borderRadius: 8,
@@ -2996,7 +2639,7 @@ const styles = StyleSheet.create({
 
   // Menu Items
   menuContainer: {
-    marginHorizontal: 20,
+    marginHorizontal: 4,
     marginTop: 16,
   },
   menuItem: {
@@ -3022,7 +2665,7 @@ const styles = StyleSheet.create({
 
   // Bank Details
   bankDetailsCard: {
-    marginHorizontal: 20,
+    marginHorizontal: 4,
     marginTop: 16,
     padding: 16,
     borderRadius: 16,
@@ -3100,7 +2743,7 @@ const styles = StyleSheet.create({
 
   // Quiz History Styles
   quizHistoryCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     padding: 16,
     borderRadius: 8,
@@ -3219,7 +2862,7 @@ const styles = StyleSheet.create({
 
   // Logout
   logoutContainer: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     padding: 16,
     borderRadius: 8,
@@ -3246,7 +2889,7 @@ const styles = StyleSheet.create({
 
   // Referral Code Styles
   referralCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     padding: 16,
     borderRadius: 8,
@@ -3323,7 +2966,7 @@ const styles = StyleSheet.create({
 
   // Profile Completion Styles
   profileCompletionCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     borderRadius: 8,
     padding: 16,
@@ -3406,7 +3049,7 @@ const styles = StyleSheet.create({
 
   // Subscription Status Styles
   subscriptionCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 4,
     marginTop: 8,
     borderRadius: 8,
     padding: 16,
@@ -3419,7 +3062,12 @@ const styles = StyleSheet.create({
   subscriptionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
+  },
+  subscriptionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   subscriptionTitle: {
     fontSize: 18,
@@ -3427,7 +3075,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   subscriptionInfo: {
-    marginBottom: 16,
+    marginBottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   subscriptionPlanContainer: {
     marginBottom: 12,
@@ -3445,6 +3096,7 @@ const styles = StyleSheet.create({
   },
   subscriptionExpiryLabel: {
     fontSize: 14,
+    textAlign: "right",
     marginBottom: 4,
   },
   subscriptionExpiryValue: {
@@ -3456,8 +3108,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#345672',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 8,
     gap: 8,
   },

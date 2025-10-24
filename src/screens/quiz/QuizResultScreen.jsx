@@ -567,25 +567,28 @@ const QuizResultScreen = () => {
                       backgroundColor: isDark ? '#451A03' : '#FEF3C7', 
                       borderColor: isDark ? '#92400E' : '#F59E0B' 
                     }]}>
-                      <View style={styles.answerSummaryRow}>
+                      <View style={(isSkipped ? 'Skipped' : userAnswer || 'Not answered').length > 30 ? styles.answerSummaryRowVertical : styles.answerSummaryRow}>
                         <Text style={[styles.answerSummaryLabel, { color: colors.textSecondary }]}>
                           Your Answer:
                         </Text>
                         <Text style={[
-                          styles.answerSummaryValue,
+                          (isSkipped ? 'Skipped' : userAnswer || 'Not answered').length > 30 ? styles.answerSummaryValueFull : styles.answerSummaryValue,
                           { 
                             color: isSkipped ? colors.textSecondary :
                                    isCorrect ? '#10B981' : '#EF4444'
                           }
-                        ]}>
+                        ]} numberOfLines={0} ellipsizeMode="clip">
                           {isSkipped ? 'Skipped' : userAnswer || 'Not answered'}
                         </Text>
                       </View>
-                      <View style={styles.answerSummaryRow}>
+                      <View style={correctAnswer.length > 30 ? styles.answerSummaryRowVertical : styles.answerSummaryRow}>
                         <Text style={[styles.answerSummaryLabel, { color: colors.textSecondary }]}>
                           Correct Answer:
                         </Text>
-                        <Text style={[styles.answerSummaryValue, { color: '#10B981' }]}>
+                        <Text style={[
+                          correctAnswer.length > 30 ? styles.answerSummaryValueFull : styles.answerSummaryValue,
+                          { color: '#10B981' }
+                        ]} numberOfLines={0} ellipsizeMode="clip">
                           {correctAnswer}
                         </Text>
                       </View>
@@ -918,15 +921,33 @@ const styles = StyleSheet.create({
   answerSummaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  answerSummaryRowVertical: {
+    flexDirection: 'column',
+    marginBottom: 12,
   },
   answerSummaryLabel: {
     fontSize: 14,
     fontWeight: '600',
+    flex: 0.4,
+  },
+  answerSummaryValueContainer: {
+    flex: 0.6,
+    alignItems: 'flex-end',
   },
   answerSummaryValue: {
     fontSize: 14,
     fontWeight: '500',
+    textAlign: 'right',
+    flexWrap: 'wrap',
+  },
+  answerSummaryValueFull: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 4,
+    lineHeight: 20,
   },
   noQuestionsContainer: {
     alignItems: 'center',
@@ -1287,15 +1308,33 @@ const styles = StyleSheet.create({
   answerSummaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  answerSummaryRowVertical: {
+    flexDirection: 'column',
+    marginBottom: 12,
   },
   answerSummaryLabel: {
     fontSize: 14,
     fontWeight: '600',
+    flex: 0.6,
+  },
+  answerSummaryValueContainer: {
+    flex: 0.4,
+    alignItems: 'flex-end',
   },
   answerSummaryValue: {
     fontSize: 14,
     fontWeight: '500',
+    textAlign: 'right',
+    flexWrap: 'wrap',
+  },
+  answerSummaryValueFull: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 4,
+    lineHeight: 20,
   },
   // Action buttons styles
   actionButtonsContainer: {
