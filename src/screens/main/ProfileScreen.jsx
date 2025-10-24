@@ -21,15 +21,8 @@ import { showMessage } from 'react-native-flash-message';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const { colors, toggleTheme } = useTheme();
-  
-  const [profileStats, setProfileStats] = useState({
-    quizzesCompleted: 0,
-    totalScore: 0,
-    rank: 0,
-    achievements: 0,
-  });
   const [playedQuizzes, setPlayedQuizzes] = useState([]);
   const [bankDetails, setBankDetails] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,6 +48,7 @@ const ProfileScreen = () => {
   
   // Profile Completion State
   const [profileCompletion, setProfileCompletion] = useState(null);
+  const [student, setStudent] = useState(null);
   
   // Bank Details State
   const [showBankForm, setShowBankForm] = useState(false);
@@ -85,14 +79,7 @@ const ProfileScreen = () => {
       if (profileRes?.success && profileRes?.user) {
         // Note: user data is managed by AuthContext, so we don't need to set it here
         console.log('✅ User data set:', profileRes.user);
-        
-        setProfileStats({
-          quizzesCompleted: profileRes.user.totalQuizzes || profileRes.user.quizzesPlayed || 0,
-          totalScore: profileRes.user.totalScore || profileRes.user.averageScore || 0,
-          rank: profileRes.user.rank || profileRes.user.globalRank || 0,
-          achievements: profileRes.user.badges?.length || profileRes.user.achievements?.length || 0,
-        });
-
+        setStudent(profileRes.user);
         setBankFormData({
           accountHolderName: profileRes.user.bankDetail?.accountHolderName || '',
           accountNumber: profileRes.user.bankDetail?.accountNumber || '',
@@ -102,7 +89,6 @@ const ProfileScreen = () => {
         });
 
         setBankDetails(profileRes.user.bankDetail || null);
-        console.log('🔍 Bank details set:', profileRes.user.bankDetail);
         // Initialize edit profile data
         setEditProfileData({
           name: profileRes.user.name || '',
@@ -119,14 +105,6 @@ const ProfileScreen = () => {
       } else {
         console.log('❌ No user data found in response');
         setError('Failed to load profile data');
-        
-        // Set fallback data to prevent crashes
-        setProfileStats({
-          quizzesCompleted: 0,
-          totalScore: 0,
-          rank: 0,
-          achievements: 0,
-        });
       }
       
       // Set profile completion data if available - match Next.js approach
@@ -358,9 +336,9 @@ const ProfileScreen = () => {
   };
 
   // Calculate stats - use both profile data and quiz history
-  const quizzesPlayed = user?.monthlyProgress?.totalQuizAttempts || 0;
-  const highScoreQuizzes = user?.monthlyProgress?.highScoreWins || 0;
-  const accuracy = user?.monthlyProgress?.accuracy || 0;
+  const quizzesPlayed = student?.monthlyProgress?.totalQuizAttempts || 0;
+  const highScoreQuizzes = student?.monthlyProgress?.highScoreWins || 0;
+  const accuracy = student?.monthlyProgress?.accuracy || 0;
 
   if (loading) {
     return (
@@ -433,23 +411,23 @@ const ProfileScreen = () => {
             <View style={styles.profilePictureContainer}>
               <View style={[styles.profilePicture, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text style={[styles.profileInitial, { color: colors.text }]}>
-                  {user?.name?.charAt(0) || 'U'}
+                  {student?.name?.charAt(0) || 'U'}
                 </Text>
               </View>
             </View>
             
             <View style={styles.profileDetails}>
               <Text style={[styles.studentName, { color: colors.text }]}>
-                {user?.name || 'User'}
+                {student?.name || 'User'}
               </Text>
-              {user?.username && (
+              {student?.username && (
                 <Text style={[styles.username, { color: colors.secondary }]}>
-                  @{user.username}
+                  @{student.username}
                 </Text>
               )}
               <Text style={[styles.userLevel, { color: colors.textSecondary }]}>
                 <Text style={{ fontWeight: 'bold' }}>
-                  {user?.levelInfo?.currentLevel?.name || 'Level 0'}
+                  {student?.levelInfo?.currentLevel?.name || 'Level 0'}
                 </Text>
               </Text>
             </View>
@@ -468,11 +446,11 @@ const ProfileScreen = () => {
          <View style={[styles.aboutCard, { backgroundColor: colors.surface }]}>
           <View style={styles.aboutHeader}>
             <Text style={[styles.aboutTitle, { color: colors.text }]}>About</Text>
-            {user?.username && (
+            {student?.username && (
               <View style={styles.followStats}>
                 <TouchableOpacity style={styles.followStat}>
                   <Text style={[styles.followCount, { color: colors.text }]}>
-                    {user?.followersCount || 0}
+                    {student?.followersCount || 0}
                   </Text>
                   <Text style={[styles.followLabel, { color: colors.textSecondary }]}>
                     Followers
@@ -480,7 +458,7 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.followStat}>
                   <Text style={[styles.followCount, { color: colors.text }]}>
-                    {user?.followingCount || 0}
+                    {student?.followingCount || 0}
                   </Text>
                   <Text style={[styles.followLabel, { color: colors.textSecondary }]}>
                     Following
@@ -498,60 +476,60 @@ const ProfileScreen = () => {
                 <View style={styles.contactItem}>
                   <Icon name="email" size={20} color={colors.textSecondary} />
                   <Text style={[styles.contactText, { color: colors.text }]}>
-                    {user?.email || 'No email provided'}
+                    {student?.email || 'No email provided'}
                   </Text>
                 </View>
                 
-                {user?.phone && (
+                {student?.phone && (
                   <View style={styles.contactItem}>
                     <Icon name="phone" size={20} color={colors.textSecondary} />
                     <Text style={[styles.contactText, { color: colors.text }]}>
-                      {user.phone}
+                      {student.phone}
                     </Text>
                   </View>
                 )}
               </View>
 
               {/* Social Links */}
-              {(user?.socialLinks?.instagram || user?.socialLinks?.facebook || 
-                user?.socialLinks?.x || user?.socialLinks?.youtube) && (
+              {(student?.socialLinks?.instagram || student?.socialLinks?.facebook || 
+                student?.socialLinks?.x || student?.socialLinks?.youtube) && (
                 <View style={styles.socialLinks}>
                   <Text style={[styles.socialLinksTitle, { color: colors.text }]}>
                     Social Media
                   </Text>
                   <View style={styles.socialLinksList}>
-      {user?.socialLinks?.instagram && (
+      {student?.socialLinks?.instagram && (
         <TouchableOpacity
           style={[styles.socialLink]}
-          onPress={() => openLink(user.socialLinks.instagram)}
+          onPress={() => openLink(student.socialLinks.instagram)}
         >
           <SocialIcon name="instagram" size={22} color="#E4405F" solid />
         </TouchableOpacity>
       )}
 
-      {user?.socialLinks?.facebook && (
+      {student?.socialLinks?.facebook && (
         <TouchableOpacity
           style={[styles.socialLink]}
-          onPress={() => openLink(user.socialLinks.facebook)}
+          onPress={() => openLink(student.socialLinks.facebook)}
         >
           <SocialIcon name="facebook" size={22} color="#1877F2" />
         </TouchableOpacity>
       )}
 
-      {user?.socialLinks?.x && (
+      {student?.socialLinks?.x && (
         <TouchableOpacity
           style={[styles.socialLink]}
-          onPress={() => openLink(user.socialLinks.x)}
+          onPress={() => openLink(student.socialLinks.x)}
         >
           <SocialIcon name="x-twitter" size={22} color="#000000" /> 
           {/* ✅ Latest FontAwesome6 icon for X */}
         </TouchableOpacity>
       )}
 
-      {user?.socialLinks?.youtube && (
+      {student?.socialLinks?.youtube && (
         <TouchableOpacity
           style={[styles.socialLink]}
-          onPress={() => openLink(user.socialLinks.youtube)}
+          onPress={() => openLink(student.socialLinks.youtube)}
         >
           <SocialIcon name="youtube" size={22} color="#FF0000" />
         </TouchableOpacity>
@@ -820,7 +798,7 @@ const ProfileScreen = () => {
             >
               <Icon name="rocket-launch" size={16} color="white" />
               <Text style={styles.subscriptionButtonText}>
-                {user?.subscriptionStatus === 'free' ? 'Upgrade Plan' : 'Manage'}
+                {student?.subscriptionStatus === 'free' ? 'Upgrade Plan' : 'Manage'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -833,23 +811,23 @@ const ProfileScreen = () => {
               <Text style={[
                 styles.subscriptionPlanValue,
                 { 
-                  color: user?.subscriptionStatus === 'free' ? colors.textSecondary : 
-                        user?.subscriptionStatus === 'basic' ? '#F59E0B' :
-                        user?.subscriptionStatus === 'premium' ? '#EF4444' :
-                        user?.subscriptionStatus === 'pro' ? '#8B5CF6' : colors.text
+                  color: student?.subscriptionStatus === 'free' ? colors.textSecondary : 
+                        student?.subscriptionStatus === 'basic' ? '#F59E0B' :
+                        student?.subscriptionStatus === 'premium' ? '#EF4444' :
+                        student?.subscriptionStatus === 'pro' ? '#8B5CF6' : colors.text
                 }
               ]}>
-                {user?.subscriptionStatus?.toUpperCase() || user?.subscription?.planName?.toUpperCase() || 'FREE'}
+                {student?.subscriptionStatus?.toUpperCase() || student?.subscription?.planName?.toUpperCase() || 'FREE'}
               </Text>
             </View>
             
-            {(user?.subscriptionExpiry || user?.subscription?.expiresAt) && user.subscriptionStatus !== 'free' && (
+            {(student?.subscriptionExpiry || student?.subscription?.expiresAt) && student.subscriptionStatus !== 'free' && (
               <View style={styles.subscriptionExpiryContainer}>
                 <Text style={[styles.subscriptionExpiryLabel, { color: colors.textSecondary }]}>
                   Expires On
                 </Text>
                 <Text style={[styles.subscriptionExpiryValue, { color: colors.text }]}>
-                  {new Date(user.subscriptionExpiry || user.subscription?.expiresAt).toLocaleDateString('en-IN', { 
+                  {new Date(student.subscriptionExpiry || student.subscription?.expiresAt).toLocaleDateString('en-IN', { 
                     day: 'numeric', 
                     month: 'short', 
                     year: 'numeric' 
@@ -871,14 +849,14 @@ const ProfileScreen = () => {
             </Text>
           </View>
           <Text style={[styles.achievementText, { color: colors.text }]}>
-            {user?.badges && user.badges.length > 0
-              ? user.badges.join(', ')
+            {student?.badges && student.badges.length > 0
+              ? student.badges.join(', ')
               : 'No badges yet'}
           </Text>
         </View>
 
         {/* Profile Completion Progress - Only show for Free or Basic plan users */}
-        {isFreeOrBasicPlanUser(user) && profileCompletion ? (
+        {isFreeOrBasicPlanUser(student) && profileCompletion ? (
           <View style={[styles.profileCompletionCard, { backgroundColor: colors.surface }]}>
             <View style={styles.profileCompletionHeader}>
               <View style={styles.profileCompletionTitleContainer}>
@@ -938,7 +916,7 @@ const ProfileScreen = () => {
               </View>
             )}
           </View>
-        ) : isFreeOrBasicPlanUser(user) ? (
+        ) : isFreeOrBasicPlanUser(student) ? (
           <View style={[styles.profileCompletionCard, { backgroundColor: colors.surface }]}>
             <View style={styles.profileCompletionHeader}>
               <Text style={[styles.profileCompletionTitle, { color: colors.text }]}>
@@ -986,14 +964,14 @@ const ProfileScreen = () => {
           </View>
           
           {/* Next Level Progress */}
-          {user?.levelInfo?.nextLevel && (
+          {student?.levelInfo?.nextLevel && (
             <View style={styles.nextLevelContainer}>
               <View style={styles.nextLevelHeader}>
                 <Text style={[styles.nextLevelTitle, { color: colors.text }]}>
-                  Next Level: {user.levelInfo.nextLevel.name}
+                  Next Level: {student.levelInfo.nextLevel.name}
                 </Text>
                 <Text style={[styles.nextLevelSubtitle, { color: colors.textSecondary }]}>
-                  {Math.max(0, user.levelInfo.nextLevel.quizzesRequired - highScoreQuizzes)} more quizzes needed
+                  {Math.max(0, student.levelInfo.nextLevel.quizzesRequired - highScoreQuizzes)} more quizzes needed
                 </Text>
               </View>
               
@@ -1003,7 +981,7 @@ const ProfileScreen = () => {
                   style={[
                     styles.nextLevelProgressBar,
                     { 
-                      width: `${user.levelInfo.nextLevel ? Math.min((highScoreQuizzes / user.levelInfo.nextLevel.quizzesRequired) * 100, 100) : 100}%`,
+                      width: `${student.levelInfo.nextLevel ? Math.min((highScoreQuizzes / student.levelInfo.nextLevel.quizzesRequired) * 100, 100) : 100}%`,
                       backgroundColor: colors.primary
                     }
                   ]}
@@ -1011,7 +989,7 @@ const ProfileScreen = () => {
               </View>
               
               <Text style={[styles.nextLevelProgressText, { color: colors.textSecondary }]}>
-              {user.levelInfo.nextLevel ? Math.round((highScoreQuizzes / user.levelInfo.nextLevel.quizzesRequired) * 100) > 100 ? 100 : Math.round((highScoreQuizzes / user.levelInfo.nextLevel.quizzesRequired) * 100) : 100}% complete
+              {student.levelInfo.nextLevel ? Math.round((highScoreQuizzes / student.levelInfo.nextLevel.quizzesRequired) * 100) > 100 ? 100 : Math.round((highScoreQuizzes / student.levelInfo.nextLevel.quizzesRequired) * 100) : 100}% complete
               </Text>
             </View>
           )}
@@ -1084,7 +1062,7 @@ const ProfileScreen = () => {
           <View style={styles.rewardsStats}>
             <View style={[styles.rewardStatItem, { backgroundColor: colors.background }]}>
               <Text style={[styles.rewardStatValue, { color: colors.success }]}>
-                ₹{user?.claimableRewards?.toLocaleString() || user?.totalRewards?.toLocaleString() || '0'}
+                ₹{student?.claimableRewards?.toLocaleString() || student?.totalRewards?.toLocaleString() || '0'}
               </Text>
               <Text style={[styles.rewardStatLabel, { color: colors.textSecondary }]}>
                 Total Claimable
@@ -1462,7 +1440,7 @@ const ProfileScreen = () => {
           <View style={styles.referralCodeContainer}>
             <View style={[styles.referralCodeBox, { backgroundColor: colors.primary }]}>
               <Text style={styles.referralCodeText}>
-                {user?.referralCode || 'REF123456'}
+                {student?.referralCode || 'REF123456'}
               </Text>
             </View>
             <TouchableOpacity 
